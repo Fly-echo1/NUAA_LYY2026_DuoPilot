@@ -178,3 +178,65 @@ float distance_pid_calculate(int16_t current_dist, int16_t target_dist)
     float error = (float)(current_dist - target_dist);
     return PID_Calculate(&pid_distance, error);
 }
+
+/* ===== Overtaking ===== */
+void overtaking_start(void)
+{
+    g_follower_state  = FOLLOWER_OVERTAKING;
+    g_ov_phase        = OV_PHASE_SWERVE_LEFT;
+    g_ov_tick_start   = tick_ms;
+
+    buzzer_on();
+}
+
+bool overtaking_is_done(void)
+{
+    return (g_follower_state == FOLLOWER_FOLLOWING);
+}
+
+void overtaking_update(uint32_t tick)
+{
+    if (g_follower_state != FOLLOWER_OVERTAKING)
+        return;
+
+    uint32_t elapsed = tick - g_ov_tick_start;
+
+    switch (g_ov_phase)
+    {
+    case OV_PHASE_SWERVE_LEFT:
+        Motor_SetSpeed(OV_SPEED_SLOW, OV_SPEED_FAST);
+
+        if (elapsed >= OV_TIME_SWERVE_LEFT)
+        {
+            g_ov_phase      = OV_PHASE_PASS;
+            g_ov_tick_start = tick;
+        }
+        break;
+
+    case OV_PHASE_PASS:
+        Motor_SetSpeed(OV_SPEED_CRUISE, OV_SPEED_CRUISE);
+
+        if (elapsed >= OV_TIME_PASS)
+        {
+            g_ov_phase      = OV_PHASE_SWERVE_RIGHT;
+            g_ov_tick_start = tick;
+        }
+        break;
+
+    case OV_PHASE_SWERVE_RIGHT:
+        Motor_SetSpeed(OV_SPEED_FAST, OV_SPEED_SLOW);
+
+        if (elapsed >= OV_TIME_SWERVE_RIGHT)
+        {
+            g_ov_phase      = OV_PHASE_DONE;
+            g_ov_tick_start = tick;
+        }
+        break;
+
+    case OV_PHASE_DONE:
+        Motor_Stop();
+        g_follower_state = FOLLOWER_FOLLOWING;
+        buzzer_off();
+        break;
+    }
+}
