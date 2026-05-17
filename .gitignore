@@ -33,3 +33,6 @@ Thumbs.db
 # Auto-generated docs
 docs-docmd/
 docs-mkdocs/
+
+# MkDocs build output
+site/
