@@ -2,25 +2,65 @@
 #define __CONTROL_H
 
 #include "pid.h"
+#include <stdint.h>
+#include <stdbool.h>
 
-/* PID 控制器实例 (在 Control.c 中定义) */
-extern PID_t pid_turn;       // 转向环PID: 灰度偏差 → 差速
-extern PID_t pid_speed_L;    // 左轮速度环PID: 目标速度→PWM
-extern PID_t pid_speed_R;    // 右轮速度环PID: 目标速度→PWM
+/* PID 控制器实例 */
+extern PID_t pid_turn;
+extern PID_t pid_speed_L;
+extern PID_t pid_speed_R;
 
-/*
- * 灰度偏差计算
- * 返回偏差值(归一化到 -400~+400), 正值=偏右, 负值=偏左
- * count_out: 输出检测到的传感器数量
- * pattern_out: 输出8位二进制模式
- */
+/* ===== Follower State Machine ===== */
+typedef enum {
+    FOLLOWER_FOLLOWING = 0,
+    FOLLOWER_OVERTAKING
+} FollowerState_t;
+
+/* ===== K230 AprilTag Data ===== */
+typedef struct {
+    int16_t distance_cm;
+    int16_t angle_deg;
+} K230_Data_t;
+
+/* ===== Overtaking Phases ===== */
+typedef enum {
+    OV_PHASE_SWERVE_LEFT = 0,
+    OV_PHASE_PASS,
+    OV_PHASE_SWERVE_RIGHT,
+    OV_PHASE_DONE
+} OvertakingPhase_t;
+
+/* Global state */
+extern FollowerState_t   g_follower_state;
+extern OvertakingPhase_t g_ov_phase;
+extern uint32_t          g_ov_tick_start;
+extern K230_Data_t       g_k230_data;
+
+/* ===== Function Declarations ===== */
+
+/* Grayscale deviation (existing) */
 float Grayscale_CalcError(uint8_t *sensor_values,
                           uint8_t *count_out, uint8_t *pattern_out);
 
-/* 串口0发送单个字符 */
+/* UART debug (existing) */
 void uart0_send_char(char ch);
-
-/* 串口0发送字符串 */
 void uart0_send_string(char* str);
+
+/* K230 line parser */
+void k230_parse_line(uint8_t *line);
+
+/* Distance PID */
+void distance_pid_init(float Kp, float Ki, float Kd,
+                       float integral_limit, float output_limit);
+float distance_pid_calculate(int16_t current_dist, int16_t target_dist);
+
+/* Overtaking control */
+void overtaking_start(void);
+void overtaking_update(uint32_t tick);
+bool overtaking_is_done(void);
+
+/* Buzzer */
+void buzzer_on(void);
+void buzzer_off(void);
 
 #endif /* __CONTROL_H */

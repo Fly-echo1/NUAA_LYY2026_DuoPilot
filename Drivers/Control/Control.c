@@ -1,6 +1,8 @@
 #include "ti_msp_dl_config.h"
 #include "Grayscale.h"
 #include "Control.h"
+#include "motor.h"
+#include "clock.h"
 
 /* PID 控制器实例 */
 PID_t pid_turn;       // 转向环PID: 灰度偏差 → 差速
@@ -79,5 +81,62 @@ void uart0_send_string(char* str)
     {
         //发送字符串首地址中的字符，并且在发送完成之后首地址自增
         uart0_send_char(*str++);
+    }
+}
+
+/* ===== Follower State Machine ===== */
+FollowerState_t   g_follower_state = FOLLOWER_FOLLOWING;
+OvertakingPhase_t g_ov_phase       = OV_PHASE_SWERVE_LEFT;
+uint32_t          g_ov_tick_start  = 0;
+K230_Data_t       g_k230_data      = { .distance_cm = -1, .angle_deg = 0 };
+
+/* Distance PID */
+static PID_t pid_distance;
+
+/* Overtaking timing constants (SysTick ms) */
+#define OV_TIME_SWERVE_LEFT  300
+#define OV_TIME_PASS        1500
+#define OV_TIME_SWERVE_RIGHT 300
+
+/* Overtaking speed constants (0-100) */
+#define OV_SPEED_SLOW    30
+#define OV_SPEED_FAST    70
+#define OV_SPEED_CRUISE  60
+
+/* Parse "TAG,dist=50,angle=-10" — updates g_k230_data */
+void k230_parse_line(uint8_t *line)
+{
+    if (!line) return;
+
+    g_k230_data.distance_cm = -1;
+    g_k230_data.angle_deg   = 0;
+
+    if (line[0] != 'T' || line[1] != 'A' || line[2] != 'G')
+        return;
+
+    uint8_t *p = line;
+    while (*p && *p != '\n')
+    {
+        if (p[0] == 'd' && p[1] == 'i' && p[2] == 's' && p[3] == 't' && p[4] == '=')
+        {
+            int val = 0;
+            int sign = 1;
+            p += 5;
+            if (*p == '-') { sign = -1; p++; }
+            while (*p >= '0' && *p <= '9') { val = val * 10 + (*p - '0'); p++; }
+            g_k230_data.distance_cm = (int16_t)(val * sign);
+            if (*p == '\0') break;
+        }
+        if (p[0] == 'a' && p[1] == 'n' && p[2] == 'g' && p[3] == 'l' && p[4] == 'e' && p[5] == '=')
+        {
+            int val = 0;
+            int sign = 1;
+            p += 6;
+            if (*p == '-') { sign = -1; p++; }
+            while (*p >= '0' && *p <= '9') { val = val * 10 + (*p - '0'); p++; }
+            g_k230_data.angle_deg = (int16_t)(val * sign);
+            if (*p == '\0') break;
+        }
+        p++;
     }
 }
