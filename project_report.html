@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Car.102 — 智能循迹小车项目报告</title>
+<style>
+  /* ========== Reset & Base ========== */
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #0b0d14;
+    --bg2: #11141e;
+    --card: #161b28;
+    --card2: #1b2133;
+    --border: #232a3e;
+    --border2: #2e3650;
+    --text: #e4e8f0;
+    --muted: #7f8aa8;
+    --muted2: #5a6480;
+    --blue: #3b82f6;
+    --blue-bg: #1a2d4e;
+    --cyan: #06b6d4;
+    --cyan-bg: #0a2a3a;
+    --purple: #8b5cf6;
+    --purple-bg: #1f1535;
+    --amber: #f59e0b;
+    --amber-bg: #2a2010;
+    --green: #22c55e;
+    --green-bg: #0a2a1a;
+    --red: #ef4444;
+    --pink: #ec4899;
+    --gradient-main: linear-gradient(135deg, #1a1f2e, #0f1420);
+    --gradient-card: linear-gradient(145deg, rgba(22,27,40,0.9), rgba(16,20,34,0.95));
+    --shadow: 0 8px 32px rgba(0,0,0,0.4);
+    --shadow-sm: 0 2px 8px rgba(0,0,0,0.3);
+    --radius: 16px;
+    --radius-sm: 10px;
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans SC', sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.6;
+    overflow-x: hidden;
+  }
+  body::before {
+    content: ''; position: fixed; inset: 0;
+    background: radial-gradient(ellipse at 20% 50%, rgba(59,130,246,0.04) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 20%, rgba(139,92,246,0.03) 0%, transparent 60%);
+    pointer-events: none; z-index: 0;
+  }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+
+  /* ========== Header ========== */
+  .header {
+    text-align: center; padding: 4rem 1rem 3rem;
+    position: relative;
+  }
+  .header::after {
+    content: ''; position: absolute; bottom: 0; left: 10%; right: 10%;
+    height: 1px; background: linear-gradient(90deg, transparent, var(--border2), transparent);
+  }
+  .header h1 {
+    font-size: 3.5rem; font-weight: 800; letter-spacing: -0.02em;
+    background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 50%, #f472b6 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .header .subtitle {
+    color: var(--muted); font-size: 1.15rem; margin-top: 0.75rem;
+    letter-spacing: 0.02em;
+  }
+  .badges { margin-top: 1.25rem; display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 14px; border-radius: 999px;
+    font-size: 0.8rem; font-weight: 500;
+    border: 1px solid; transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .badge:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+  .badge-blue { border-color: #1e4a8a; background: #0f1d3d; color: #60a5fa; }
+  .badge-green { border-color: #1a5a2a; background: #0a2a1a; color: #4ade80; }
+  .badge-amber { border-color: #5a4a0a; background: #2a2010; color: #fbbf24; }
+  .badge-purple { border-color: #3a2a6a; background: #1a1035; color: #a78bfa; }
+
+  /* ========== Card ========== */
+  .card {
+    background: var(--gradient-card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 2rem;
+    margin-bottom: 1.75rem;
+    box-shadow: var(--shadow-sm);
+    transition: border-color 0.3s, box-shadow 0.3s;
+    position: relative; overflow: hidden;
+  }
+  .card:hover { border-color: var(--border2); box-shadow: var(--shadow); }
+  .card::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(145deg, rgba(59,130,246,0.02), transparent);
+    pointer-events: none;
+  }
+  .card h2 {
+    font-size: 1.2rem; font-weight: 600; margin-bottom: 1.25rem;
+    display: flex; align-items: center; gap: 10px;
+    color: var(--text);
+  }
+  .card h2 .accent-line {
+    width: 4px; height: 20px; border-radius: 2px; flex-shrink: 0;
+  }
+  .card h2 .accent-blue { background: var(--blue); }
+  .card h2 .accent-amber { background: var(--amber); }
+  .card h2 .accent-green { background: var(--green); }
+  .card h2 .accent-purple { background: var(--purple); }
+  .card h2 .accent-cyan { background: var(--cyan); }
+
+  /* ========== Stats ========== */
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  @media (max-width: 768px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+  .stat-card {
+    background: var(--gradient-card); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 1.25rem 1rem;
+    text-align: center; box-shadow: var(--shadow-sm);
+    transition: transform 0.2s, border-color 0.3s;
+  }
+  .stat-card:hover { transform: translateY(-2px); border-color: var(--border2); }
+  .stat-icon { font-size: 1.5rem; margin-bottom: 6px; display: block; }
+  .stat-value { font-size: 1.75rem; font-weight: 700; line-height: 1.2; }
+  .stat-value.blue { color: var(--blue); }
+  .stat-value.green { color: var(--green); }
+  .stat-value.amber { color: var(--amber); }
+  .stat-value.purple { color: var(--purple); }
+  .stat-label { font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
+
+  /* ========== Flowchart ========== */
+  .flow-wrapper {
+    overflow-x: auto; padding: 16px 0 24px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .flow-pipeline {
+    display: flex; align-items: center; gap: 0;
+    min-width: min-content; padding: 0 8px;
+  }
+  .flow-node {
+    flex-shrink: 0; position: relative;
+    display: flex; flex-direction: column; align-items: center;
+    width: 130px; cursor: default;
+  }
+  .flow-node-inner {
+    background: var(--gradient-card); border: 1px solid var(--border);
+    border-radius: 14px; padding: 14px 8px 12px;
+    width: 100%; text-align: center;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    position: relative; overflow: hidden;
+  }
+  .flow-node-inner::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    transition: height 0.3s;
+  }
+  .flow-node:hover .flow-node-inner { transform: translateY(-4px); }
+  .flow-node:hover .flow-node-inner::before { height: 4px; }
+
+  /* Color phases */
+  .flow-node.phase-input .flow-node-inner::before { background: linear-gradient(90deg, #3b82f6, #06b6d4); }
+  .flow-node.phase-process .flow-node-inner::before { background: linear-gradient(90deg, #8b5cf6, #ec4899); }
+  .flow-node.phase-control .flow-node-inner::before { background: linear-gradient(90deg, #f59e0b, #f97316); }
+  .flow-node.phase-output .flow-node-inner::before { background: linear-gradient(90deg, #22c55e, #10b981); }
+  .flow-node.phase-decision .flow-node-inner::before { background: linear-gradient(90deg, #ef4444, #f59e0b); }
+
+  .flow-node.phase-input:hover .flow-node-inner { border-color: #3b82f6; box-shadow: 0 8px 24px rgba(59,130,246,0.15); }
+  .flow-node.phase-process:hover .flow-node-inner { border-color: #8b5cf6; box-shadow: 0 8px 24px rgba(139,92,246,0.15); }
+  .flow-node.phase-control:hover .flow-node-inner { border-color: #f59e0b; box-shadow: 0 8px 24px rgba(245,158,11,0.15); }
+  .flow-node.phase-output:hover .flow-node-inner { border-color: #22c55e; box-shadow: 0 8px 24px rgba(34,197,94,0.15); }
+  .flow-node.phase-decision:hover .flow-node-inner { border-color: #ef4444; box-shadow: 0 8px 24px rgba(239,68,68,0.15); }
+
+  .flow-step-num {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.75rem; font-weight: 700; margin: 0 auto 6px;
+    transition: transform 0.3s;
+  }
+  .flow-node:hover .flow-step-num { transform: scale(1.15); }
+  .phase-input .flow-step-num { background: var(--blue-bg); color: var(--blue); }
+  .phase-process .flow-step-num { background: var(--purple-bg); color: var(--purple); }
+  .phase-control .flow-step-num { background: var(--amber-bg); color: var(--amber); }
+  .phase-output .flow-step-num { background: var(--green-bg); color: var(--green); }
+  .phase-decision .flow-step-num { background: #2a0a0a; color: var(--red); }
+
+  .flow-icon { font-size: 1.4rem; display: block; margin-bottom: 4px; }
+  .flow-title { font-size: 0.78rem; font-weight: 600; color: var(--text); line-height: 1.3; }
+  .flow-sub { font-size: 0.65rem; color: var(--muted2); margin-top: 3px; }
+
+  /* Arrow connector */
+  .flow-arrow {
+    flex-shrink: 0; width: 48px; height: 3px; position: relative;
+    margin: 0 -4px;
+  }
+  .flow-arrow .arrow-line {
+    position: absolute; top: 50%; left: 0; right: 0; height: 3px;
+    transform: translateY(-50%);
+    border-radius: 2px;
+  }
+  .flow-arrow .arrow-head {
+    position: absolute; top: 50%; right: -2px;
+    width: 12px; height: 12px;
+    background: transparent;
+    transform: translateY(-50%) rotate(45deg);
+    border: none;
+  }
+
+  .flow-arrow.blue .arrow-line { background: linear-gradient(90deg, var(--blue), var(--cyan)); }
+  .flow-arrow.blue .arrow-head { border-right: 3px solid var(--cyan); border-top: 3px solid var(--cyan); }
+  .flow-arrow.purple .arrow-line { background: linear-gradient(90deg, var(--purple), var(--pink)); }
+  .flow-arrow.purple .arrow-head { border-right: 3px solid var(--pink); border-top: 3px solid var(--pink); }
+  .flow-arrow.amber .arrow-line { background: linear-gradient(90deg, var(--amber), #f97316); }
+  .flow-arrow.amber .arrow-head { border-right: 3px solid #f97316; border-top: 3px solid #f97316; }
+  .flow-arrow.green .arrow-line { background: linear-gradient(90deg, var(--green), #10b981); }
+  .flow-arrow.green .arrow-head { border-right: 3px solid #10b981; border-top: 3px solid #10b981; }
+
+  /* Flow label (phase indicator) */
+  .flow-label {
+    margin-top: 10px; font-size: 0.65rem; text-transform: uppercase;
+    letter-spacing: 0.12em; font-weight: 600;
+  }
+  .flow-label.input { color: var(--blue); }
+  .flow-label.process { color: var(--purple); }
+  .flow-label.control { color: var(--amber); }
+  .flow-label.output { color: var(--green); }
+
+  /* ========== Legend ========== */
+  .legend { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; margin-top: 8px; }
+  .legend-item { display: flex; align-items: center; gap: 8px; font-size: 0.78rem; color: var(--muted); }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+  /* ========== Control Block Diagram ========== */
+  .control-diagram {
+    width: 100%; overflow-x: auto; padding: 10px 0;
+    -webkit-overflow-scrolling: touch;
+  }
+  .diagram-svg { display: block; margin: 0 auto; }
+
+  /* ========== Tables ========== */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+  th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border); }
+  th {
+    color: var(--muted); font-weight: 500; font-size: 0.72rem;
+    text-transform: uppercase; letter-spacing: 0.08em;
+    background: rgba(255,255,255,0.02);
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+  td.fn { font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace; font-size: 0.82rem; }
+  td.num { text-align: center; }
+
+  /* ========== Grids ========== */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 768px) { .grid-2 { grid-template-columns: 1fr; } }
+
+  /* ========== Pinout ========== */
+  .pin-group { margin-bottom: 1.25rem; }
+  .pin-group:last-child { margin-bottom: 0; }
+  .pin-group h3 {
+    font-size: 0.82rem; margin-bottom: 8px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .pin-group h3 .pin-ico { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+  .pin-group table td:first-child { font-family: 'SF Mono', monospace; font-size: 0.82rem; }
+  .pin-group table td:last-child { color: var(--muted); }
+
+  /* ========== File tree ========== */
+  .file-tree { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82rem; line-height: 2; }
+  .file-tree .dir { color: var(--amber); }
+  .file-tree .file { color: var(--muted); }
+  .file-tree .indent { padding-left: 1.5rem; }
+  .file-tree .highlight { color: var(--cyan); font-weight: 600; }
+
+  /* ========== Steps / How to run ========== */
+  .steps { counter-reset: step; }
+  .step-item {
+    display: flex; gap: 16px; padding: 16px 0;
+    border-bottom: 1px solid var(--border); align-items: flex-start;
+  }
+  .step-item:last-child { border-bottom: none; }
+  .step-num {
+    width: 36px; height: 36px; min-width: 36px;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: 0.9rem; font-weight: 700; background: var(--blue-bg); color: var(--blue);
+    border: 1px solid rgba(59,130,246,0.3);
+  }
+  .step-body { flex: 1; min-width: 0; }
+  .step-body h4 { font-size: 0.95rem; font-weight: 600; margin-bottom: 4px; }
+  .step-body p { font-size: 0.85rem; color: var(--muted); }
+  .step-body code {
+    background: rgba(255,255,255,0.06); padding: 2px 8px;
+    border-radius: 4px; font-family: 'SF Mono', monospace; font-size: 0.82rem;
+    color: var(--cyan);
+  }
+  .cmd-box {
+    background: #080a12; border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 14px; margin-top: 8px;
+    font-family: 'SF Mono', monospace; font-size: 0.82rem;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  }
+  .cmd-box code { background: none; padding: 0; color: var(--text); }
+  .cmd-box .tag {
+    background: rgba(59,130,246,0.15); color: var(--blue);
+    padding: 2px 10px; border-radius: 4px; font-size: 0.72rem;
+    font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase;
+  }
+
+  /* ========== Checklist ========== */
+  .checklist { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  @media (max-width: 768px) { .checklist { grid-template-columns: 1fr; } }
+  .check-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 12px; border-radius: 8px;
+    background: rgba(255,255,255,0.02); border: 1px solid var(--border);
+    font-size: 0.82rem;
+  }
+  .check-item .box {
+    width: 18px; height: 18px; border-radius: 4px;
+    border: 2px solid var(--muted2); flex-shrink: 0;
+  }
+
+  /* ========== Refactor table ========== */
+  .tag-move { color: var(--cyan); background: rgba(6,182,212,0.1); padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; }
+  .tag-add { color: var(--green); background: rgba(34,197,94,0.1); padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; }
+  .tag-del { color: var(--red); background: rgba(239,68,68,0.1); padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; }
+  .tag-opt { color: var(--amber); background: rgba(245,158,11,0.1); padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; }
+
+  /* ========== Footer ========== */
+  .footer {
+    text-align: center; padding: 3rem 1rem;
+    color: var(--muted2); font-size: 0.8rem;
+    border-top: 1px solid var(--border);
+    margin-top: 1rem;
+  }
+
+  /* ========== Tip box ========== */
+  .tip-box {
+    display: flex; gap: 14px; align-items: flex-start;
+    background: linear-gradient(135deg, rgba(245,158,11,0.06), rgba(245,158,11,0.02));
+    border: 1px solid rgba(245,158,11,0.2); border-radius: var(--radius-sm);
+    padding: 16px 20px; margin-top: 16px;
+  }
+  .tip-box .tip-icon { font-size: 1.3rem; flex-shrink: 0; margin-top: 2px; }
+  .tip-box .tip-content { font-size: 0.85rem; color: var(--muted); }
+  .tip-box .tip-content strong { color: var(--amber); }
+  .tip-box .tip-content code {
+    background: rgba(255,255,255,0.06); padding: 1px 6px;
+    border-radius: 4px; font-family: 'SF Mono', monospace; font-size: 0.8rem;
+  }
+  pre.code-block {
+    background: #080a12; border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px 18px; margin-top: 8px; overflow-x: auto;
+    font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82rem; line-height: 1.5;
+    color: var(--text);
+  }
+  .code-block .cm { color: #5a6480; } /* comment */
+  .code-block .kw { color: var(--purple); } /* keyword */
+  .code-block .fn { color: var(--cyan); } /* function */
+  .code-block .str { color: var(--green); } /* string */
+  .code-block .num { color: var(--amber); } /* number */
+
+  /* ========== Animations ========== */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .card { animation: fadeUp 0.5s ease both; }
+  .card:nth-child(2) { animation-delay: 0.05s; }
+  .card:nth-child(3) { animation-delay: 0.1s; }
+
+  /* Debug output animation */
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+  .cursor-blink { display: inline-block; width: 8px; height: 14px; background: var(--cyan); border-radius: 1px; animation: blink 1s step-end infinite; vertical-align: middle; margin-left: 2px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<!------------------------------ HEADER ------------------------------>
+<header class="header">
+  <h1>Car.102</h1>
+  <p class="subtitle">基于 MSPM0G3507 的两轮差速循迹小车 · 双环 PID 闭环控制</p>
+  <div class="badges">
+    <span class="badge badge-blue">⬤ MSPM0G3507</span>
+    <span class="badge badge-green">⬤ ARM Cortex-M0+</span>
+    <span class="badge badge-amber">⬤ Code Composer Studio</span>
+    <span class="badge badge-purple">⬤ SEGGER J-Link</span>
+  </div>
+</header>
+
+<!------------------------------ STATS ------------------------------>
+<div class="stats-grid">
+  <div class="stat-card">
+    <span class="stat-icon">📦</span>
+    <div class="stat-value blue">18</div>
+    <div class="stat-label">驱动模块</div>
+  </div>
+  <div class="stat-card">
+    <span class="stat-icon">📄</span>
+    <div class="stat-value green">~210</div>
+    <div class="stat-label">main.c (行)</div>
+  </div>
+  <div class="stat-card">
+    <span class="stat-icon">⚡</span>
+    <div class="stat-value amber">50 Hz</div>
+    <div class="stat-label">控制频率</div>
+  </div>
+  <div class="stat-card">
+    <span class="stat-icon">🔧</span>
+    <div class="stat-value purple">双环</div>
+    <div class="stat-label">PID 控制</div>
+  </div>
+</div>
+
+<!------------------------------ OVERVIEW ------------------------------>
+<div class="card">
+  <h2><span class="accent-line accent-blue"></span> 📋 项目概览</h2>
+  <p style="color: var(--muted); margin-bottom: 1.25rem; line-height: 1.7;">
+    基于 <strong style="color: var(--text);">TI MSPM0G3507</strong> 微控制器的两轮差速循迹小车。
+    通过 <strong style="color: var(--cyan);">8路灰度传感器</strong> 实时检测赛道黑线位置，
+    使用 <strong style="color: var(--amber);">双环 PID</strong>（转向环 + 速度环）实现精确的闭环循迹控制。
+    编码器提供车轮速度反馈，OLED 实时显示运行数据，蓝牙串口输出调试信息。
+  </p>
+  <div class="grid-2">
+    <div>
+      <table>
+        <tr><th>组件</th><th>详情</th></tr>
+        <tr><td>主控芯片</td><td>MSPM0G3507 (80MHz, ARM Cortex-M0+)</td></tr>
+        <tr><td>封装</td><td>LQFP-48 (PT)</td></tr>
+        <tr><td>SDK</td><td>MSPM0 SDK 2.10.00.04</td></tr>
+        <tr><td>SysConfig</td><td>v1.26.2</td></tr>
+        <tr><td>调试器</td><td>SEGGER J-Link</td></tr>
+      </table>
+    </div>
+    <div>
+      <table>
+        <tr><th>外设</th><th>用途</th></tr>
+        <tr><td>UART × 3</td><td>蓝牙调试 / WIT传感器 / 视觉模块</td></tr>
+        <tr><td>PWM × 2</td><td>左右电机速度控制</td></tr>
+        <tr><td>GPIO中断 × 4</td><td>编码器脉冲计数</td></tr>
+        <tr><td>SPI × 1</td><td>预留外设通信</td></tr>
+        <tr><td>定时器 × 1</td><td>50ms 编码器速度采样</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!------------------------------ PIPELINE FLOWCHART ------------------------------>
+<div class="card">
+  <h2><span class="accent-line accent-amber"></span> 🔄 控制流程</h2>
+  <p style="color: var(--muted); font-size: 0.85rem; margin-bottom: 1rem;">
+    主循环以 <strong style="color: var(--amber);">50 Hz (20ms)</strong> 周期运行，分为 8 个步骤：
+  </p>
+
+  <div class="legend">
+    <span class="legend-item"><span class="legend-dot" style="background:var(--blue)"></span> 传感器输入</span>
+    <span class="legend-item"><span class="legend-dot" style="background:var(--purple)"></span> 数据处理</span>
+    <span class="legend-item"><span class="legend-dot" style="background:var(--amber)"></span> 控制运算</span>
+    <span class="legend-item"><span class="legend-dot" style="background:var(--green)"></span> 执行输出</span>
+  </div>
+
+  <div class="flow-wrapper">
+    <div class="flow-pipeline">
+
+      <!-- 1 -->
+      <div class="flow-node phase-input">
+        <div class="flow-node-inner">
+          <div class="flow-step-num">1</div>
+          <div class="flow-icon">📡</div>
+          <div class="flow-title">读取灰度</div>
+          <div class="flow-sub">8路传感器</div>
+        </div>
+      </div>
+      <div class="flow-arrow blue">
+        <div class="arrow-line"></div>
+        <div class="arrow-head"></div>
+      </div>
+
+      <!-- 2 -->
+      <div class="flow-node phase-process">
+        <div class="flow-node-inner">
+          <div class="flow-step-num">2</div>
+          <div class="flow-icon">🧮</div>
+          <div class="flow-title">计算偏差</div>
+          <div class="flow-sub">查表 + 加权</div>
+        </div>
+      </div>
+      <div class="flow-arrow purple">
+        <div class="arrow-line"></div>
+        <div class="arrow-head"></div>
+      </div>
+
+      <!-- 3 -->
+      <div class="flow-node phase-decision">
+        <div class="flow-node-inner">
+          <div class="flow-step-num">3</div>
+          <div class="flow-icon">🚦</div>
+          <div class="flow-title">场景判定</div>
+          <div class="flow-sub">丢线 / 终点</div>
+        </div>
+      </div>
+      <div class="flow-arrow purple">
+        <div class="arrow-line"></div>
+        <div class="arrow-head"></div>
+      </div>
+
+      <!-- 4 -->
+      <div class="flow-node phase-control">
+        <div class="flow-node-inner">
+          <div class="flow-step-num">4</div>
+          <div class="flow-icon">🎯</div>
+          <div class="flow-title">转向环 PID</div>
+          <div class="flow-sub">偏差 → 差速</div>
+        </div>
+      </div>
+      <div class="flow-arrow amber">
+        <div class="arrow-line"></div>
+        <div class="arrow-head"></div>
+      </div>
+
+      <!-- 5 -->
+      <div class="flow-node phase-control">
+        <div class="flow-node-inner">
+          <div class="flow-step-num">5</div>
+          <div class="flow-icon">⚖️</div>
+          <div class="flow-title">差速计算</div>
+          <div class="flow-sub">base ± turn</div>
+        </div>
+      </div>
+      <div class="flow-arrow amber">
+        <div class="arrow-line"></div>
+        <div class="arrow-head"></div>
+      </div>
+
+      <!-- 6 -->
+      <div class="flow-node phase-control">
+        <div class="flow-node-inner">
+          <div class="flow-step-num">6</div>
+          <div class="flow-icon">⚡</div>
+          <div class="flow-title">速度环 PID</div>
+          <div class="flow-sub">编码器反馈</div>
+        </div>
+      </div>
+      <div class="flow-arrow green">
+        <div class="arrow-line"></div>
+        <div class="arrow-head"></div>
+      </div>
+
+      <!-- 7 -->
+      <div class="flow-node phase-output">
+        <div class="flow-node-inner">
+          <div class="flow-step-num">7</div>
+          <div class="flow-icon">🔧</div>
+          <div class="flow-title">限幅输出</div>
+          <div class="flow-sub">PWM [0,100]</div>
+        </div>
+      </div>
+      <div class="flow-arrow green">
+        <div class="arrow-line"></div>
+        <div class="arrow-head"></div>
+      </div>
+
+      <!-- 8 -->
+      <div class="flow-node phase-output">
+        <div class="flow-node-inner">
+          <div class="flow-step-num">8</div>
+          <div class="flow-icon">🖥️</div>
+          <div class="flow-title">显示 & 调试</div>
+          <div class="flow-sub">OLED + 蓝牙</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex; justify-content:space-between; padding:0 4px; margin-top:4px;">
+    <span class="flow-label input">📡 感知层</span>
+    <span class="flow-label process">🧠 处理层</span>
+    <span class="flow-label control">⚙️ 控制层</span>
+    <span class="flow-label output">📤 执行层</span>
+  </div>
+</div>
+
+<!------------------------------ CONTROL BLOCK DIAGRAM ------------------------------>
+<div class="card">
+  <h2><span class="accent-line accent-cyan"></span> 🔁 控制框图 (Feedback Control System)</h2>
+
+  <div class="control-diagram">
+    <svg class="diagram-svg" viewBox="0 0 820 260" width="820" height="260" xmlns="http://www.w3.org/2000/svg" style="max-width:100%; height:auto;">
+      <defs>
+        <marker id="arrow-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M0,0 L10,5 L0,10 Z" fill="#3b82f6"/>
+        </marker>
+        <marker id="arrow-amber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M0,0 L10,5 L0,10 Z" fill="#f59e0b"/>
+        </marker>
+        <marker id="arrow-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M0,0 L10,5 L0,10 Z" fill="#22c55e"/>
+        </marker>
+        <marker id="arrow-purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M0,0 L10,5 L0,10 Z" fill="#8b5cf6"/>
+        </marker>
+        <marker id="arrow-muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M0,0 L10,5 L0,10 Z" fill="#5a6480"/>
+        </marker>
+        <filter id="glow-blue">
+          <feGaussianBlur stdDeviation="2" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <linearGradient id="grd-box" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#1b2133"/>
+          <stop offset="100%" stop-color="#131826"/>
+        </linearGradient>
+        <linearGradient id="grd-pid" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#2a2010"/>
+          <stop offset="100%" stop-color="#1f180c"/>
+        </linearGradient>
+        <linearGradient id="grd-plant" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#0a2a1a"/>
+          <stop offset="100%" stop-color="#061a0f"/>
+        </linearGradient>
+      </defs>
+
+      <!-- Background -->
+      <rect x="0" y="0" width="820" height="260" rx="12" fill="none"/>
+
+      <!-- Titles / Labels -->
+      <text x="38" y="38" fill="#5a6480" font-size="11" font-weight="600" font-family="monospace">r(t)</text>
+      <text x="38" y="48" fill="#5a6480" font-size="9" font-family="monospace">目标速度</text>
+
+      <!-- Summing junction (circle) -->
+      <circle cx="70" cy="130" r="22" fill="none" stroke="#3b82f6" stroke-width="2" opacity="0.8"/>
+      <text x="60" y="128" fill="#3b82f6" font-size="16" font-weight="bold">+</text>
+      <text x="68" y="142" fill="#ef4444" font-size="16" font-weight="bold">−</text>
+
+      <!-- Error label -->
+      <text x="110" y="118" fill="#7f8aa8" font-size="10" font-family="monospace">e(t)</text>
+
+      <!-- Arrow: reference → summing -->
+      <line x1="10" y1="125" x2="48" y2="125" stroke="#3b82f6" stroke-width="2" marker-end="url(#arrow-blue)"/>
+      <text x="10" y="118" fill="#3b82f6" font-size="9" font-family="monospace">设定</text>
+
+      <!-- PID Controller box -->
+      <rect x="130" y="95" width="110" height="70" rx="8" fill="url(#grd-pid)" stroke="#f59e0b" stroke-width="1.5"/>
+      <text x="151" y="118" fill="#fbbf24" font-size="12" font-weight="bold">PID 控制器</text>
+      <text x="140" y="133" fill="#f59e0b" font-size="9" font-family="monospace">转向环 Kp=0.8/Ki=0.005/Kd=0.3</text>
+      <text x="140" y="148" fill="#f59e0b" font-size="9" font-family="monospace">速度环 Kp=0.5/Ki=0.01/Kd=0.1</text>
+
+      <!-- Arrow: summing → PID -->
+      <line x1="92" y1="130" x2="125" y2="130" stroke="#f59e0b" stroke-width="2" marker-end="url(#arrow-amber)"/>
+
+      <!-- Plant (Motor + Car) box -->
+      <rect x="380" y="95" width="130" height="70" rx="8" fill="url(#grd-plant)" stroke="#22c55e" stroke-width="1.5"/>
+      <text x="420" y="118" fill="#4ade80" font-size="12" font-weight="bold">被控对象</text>
+      <text x="400" y="135" fill="#22c55e" font-size="9" font-family="monospace">电机 + 车轮 + 车体</text>
+      <text x="410" y="150" fill="#22c55e" font-size="9" font-family="monospace">PWM → 转速 → 位移</text>
+
+      <!-- Arrow: PID → Plant -->
+      <line x1="240" y1="130" x2="310" y2="130" stroke="#22c55e" stroke-width="2" marker-end="url(#arrow-green)"/>
+
+      <!-- Actuator label -->
+      <text x="265" y="118" fill="#7f8aa8" font-size="10" font-family="monospace">u(t)</text>
+      <text x="258" y="128" fill="#5a6480" font-size="9" font-family="monospace">PWM控制量</text>
+
+      <!-- Output -->
+      <text x="520" y="120" fill="#7f8aa8" font-size="11" font-family="monospace">y(t)</text>
+      <text x="520" y="135" fill="#5a6480" font-size="9" font-family="monospace">实际速度</text>
+
+      <!-- Arrow: Plant → Output -->
+      <line x1="510" y1="130" x2="555" y2="130" stroke="#22c55e" stroke-width="2" marker-end="url(#arrow-green)"/>
+
+      <!-- Output circle -->
+      <circle cx="575" cy="130" r="18" fill="none" stroke="#22c55e" stroke-width="2" opacity="0.8"/>
+
+      <!-- Grayscale sensor block -->
+      <rect x="130" y="200" width="110" height="36" rx="6" fill="rgba(59,130,246,0.08)" stroke="#3b82f6" stroke-width="1" stroke-dasharray="4,3"/>
+      <text x="146" y="223" fill="#60a5fa" font-size="11" font-weight="500">灰度传感器</text>
+
+      <!-- Arrow: sensor → junction -->
+      <line x1="185" y1="200" x2="185" y2="158" stroke="#3b82f6" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrow-blue)"/>
+
+      <!-- Arrow: output → sensor -->
+      <line x1="575" y1="148" x2="575" y2="218" stroke="#3b82f6" stroke-width="1.5" stroke-dasharray="4,3"/>
+      <line x1="575" y1="218" x2="240" y2="218" stroke="#3b82f6" stroke-width="1.5" stroke-dasharray="4,3"/>
+      <line x1="240" y1="218" x2="240" y2="200" stroke="#3b82f6" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrow-blue)"/>
+
+      <!-- Feedback label -->
+      <text x="400" y="212" fill="#3b82f6" font-size="10" font-family="monospace">反馈 (编码器测速 + 灰度偏差)</text>
+
+      <!-- Disturbance -->
+      <line x1="350" y1="50" x2="350" y2="93" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arrow-muted)"/>
+      <text x="310" y="48" fill="#ef4444" font-size="9" font-family="monospace">扰动量 (地面摩擦/坡度)</text>
+
+      <!-- Legend -->
+      <rect x="620" y="20" width="5" height="5" rx="1" fill="#3b82f6"/>
+      <text x="630" y="28" fill="#5a6480" font-size="9">信号 / 反馈</text>
+      <rect x="620" y="40" width="5" height="5" rx="1" fill="#f59e0b"/>
+      <text x="630" y="48" fill="#5a6480" font-size="9">控制运算</text>
+      <rect x="620" y="60" width="5" height="5" rx="1" fill="#22c55e"/>
+      <text x="630" y="68" fill="#5a6480" font-size="9">执行输出</text>
+      <rect x="620" y="80" width="5" height="5" rx="1" fill="#ef4444"/>
+      <text x="630" y="88" fill="#5a6480" font-size="9">外部扰动</text>
+    </svg>
+  </div>
+</div>
+
+<!------------------------------ SOFTWARE ARCHITECTURE ------------------------------>
+<div class="card">
+  <h2><span class="accent-line accent-purple"></span> 🏗️ 软件架构</h2>
+  <div class="grid-2">
+    <div>
+      <h3 style="font-size:0.85rem; color:var(--muted); margin-bottom:10px; font-weight:500;">📁 目录结构</h3>
+      <div class="file-tree">
+        <div class="dir">Car.102/</div>
+        <div class="indent">
+          <div class="file">main.c — 主循环</div>
+          <div class="file">main.h — 头文件聚合</div>
+          <div class="dir">Drivers/</div>
+          <div class="indent">
+            <div class="dir" style="color:var(--cyan)">Control/</div>
+            <div class="indent" style="color:var(--cyan)">Control.c + Control.h</div>
+            <div class="dir">PID/</div>
+            <div class="dir">Motor/</div>
+            <div class="dir">Encoder/</div>
+            <div class="dir">Grayscale/</div>
+            <div class="dir">OLED_Software_I2C/</div>
+            <div class="dir" style="color:var(--muted)">IMU660RB/, MPU6050/, ...</div>
+            <div class="dir" style="color:var(--muted)">VL53L0X/, Ultrasonic_*/</div>
+            <div class="dir" style="color:var(--muted)">WIT/, MSPM0/</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <h3 style="font-size:0.85rem; color:var(--muted); margin-bottom:10px; font-weight:500;">🔗 依赖关系</h3>
+      <pre class="code-block" style="margin-top:0;">
+<span class="cm">/* main.c 的 include 链 */</span>
+<span class="fn">#include</span> <span class="str">"ti_msp_dl_config.h"</span>
+<span class="fn">#include</span> <span class="str">"main.h"</span>     <span class="cm">// → motor.h, pid.h, ...</span>
+<span class="fn">#include</span> <span class="str">"Control.h"</span>  <span class="cm">// → pid.h</span>
+<span class="fn">#include</span> <span class="str">"Grayscale.h"</span>
+
+<span class="cm">/* Control.c 的 include 链 */</span>
+<span class="fn">#include</span> <span class="str">"ti_msp_dl_config.h"</span>
+<span class="fn">#include</span> <span class="str">"Grayscale.h"</span>  <span class="cm">// GRAYSCALE_CHANNELS</span>
+<span class="fn">#include</span> <span class="str">"Control.h"</span></pre>
+    </div>
+  </div>
+</div>
+
+<!------------------------------ REFACTORING ------------------------------>
+<div class="card">
+  <h2><span class="accent-line accent-green"></span> 🔄 本次重构</h2>
+  <p style="color: var(--muted); font-size: 0.85rem; margin-bottom: 1rem;">
+    将 main.c 中的控制相关函数移动到新建的 <strong style="color: var(--cyan);">Control 模块</strong>，精简 main.c 约 80 行。
+  </p>
+  <div class="table-wrap">
+    <table>
+      <tr><th>操作</th><th>代码</th><th>原位置</th><th>目标</th></tr>
+      <tr>
+        <td><span class="tag-move">移动</span></td>
+        <td class="fn">PID_t pid_turn / pid_speed_L / pid_speed_R</td>
+        <td>main.c (static)</td>
+        <td>Control.c (全局) + Control.h (extern)</td>
+      </tr>
+      <tr>
+        <td><span class="tag-move">移动</span></td>
+        <td class="fn">static float Grayscale_CalcError()</td>
+        <td>main.c</td>
+        <td>Control.c (去static) + Control.h (声明)</td>
+      </tr>
+      <tr>
+        <td><span class="tag-move">移动</span></td>
+        <td class="fn">void uart0_send_char() / uart0_send_string()</td>
+        <td>main.c</td>
+        <td>Control.c + Control.h</td>
+      </tr>
+      <tr>
+        <td><span class="tag-add">新增</span></td>
+        <td class="fn">#define CLAMP(x, min, max)</td>
+        <td>—</td>
+        <td>main.c (行40)</td>
+      </tr>
+      <tr>
+        <td><span class="tag-opt">优化</span></td>
+        <td class="fn">目标速度限幅 (if ×4) → CLAMP ×2</td>
+        <td>main.c 行145-149</td>
+        <td>限幅宏替换</td>
+      </tr>
+      <tr>
+        <td><span class="tag-opt">优化</span></td>
+        <td class="fn">PWM限幅 (if ×4) → CLAMP ×2</td>
+        <td>main.c 行164-168</td>
+        <td>限幅宏替换</td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+<!------------------------------ PINOUT ------------------------------>
+<div class="card">
+  <h2><span class="accent-line accent-blue"></span> 🔌 引脚分配</h2>
+  <div class="grid-2">
+    <div class="pin-group">
+      <h3><span class="pin-ico" style="background:#22c55e"></span> 电机驱动</h3>
+      <table><tr><th>引脚</th><th>信号</th></tr>
+        <tr><td>PA17 / PA18</td><td>左电机方向</td></tr>
+        <tr><td>PB9 / PA15</td><td>右电机方向</td></tr>
+        <tr><td>PB8 (TIMA0)</td><td>左电机 PWM</td></tr>
+        <tr><td>PA14 (TIMG12)</td><td>右电机 PWM</td></tr>
+      </table>
+    </div>
+    <div class="pin-group">
+      <h3><span class="pin-ico" style="background:#f59e0b"></span> 编码器 (GPIO中断)</h3>
+      <table><tr><th>引脚</th><th>信号</th></tr>
+        <tr><td>PA22 / PA21</td><td>编码器A (PINA_0/1)</td></tr>
+        <tr><td>PA24 / PA23</td><td>编码器B (PINB_0/1)</td></tr>
+      </table>
+    </div>
+    <div class="pin-group">
+      <h3><span class="pin-ico" style="background:#8b5cf6"></span> 灰度传感器</h3>
+      <table><tr><th>引脚</th><th>信号</th></tr>
+        <tr><td>PA2</td><td>数字信号 OUT</td></tr>
+        <tr><td>PA9 / PB3 / PB2 / ...</td><td>AD0–AD7</td></tr>
+      </table>
+    </div>
+    <div class="pin-group">
+      <h3><span class="pin-ico" style="background:#06b6d4"></span> 通信 & 其他</h3>
+      <table><tr><th>引脚</th><th>功能</th></tr>
+        <tr><td>PA12 / PA13</td><td>OLED I2C (SCL/SDA)</td></tr>
+        <tr><td>PA10 (TX)</td><td>蓝牙调试 (UART0)</td></tr>
+        <tr><td>PA25 (RX)</td><td>WIT传感器 (UART3)</td></tr>
+        <tr><td>PB7/PB6</td><td>视觉模块 (UART1)</td></tr>
+        <tr><td>PA27</td><td>蜂鸣器</td></tr>
+        <tr><td>PA31 / PA28</td><td>LED1 / LED2</td></tr>
+        <tr><td>PA20 / PA19</td><td>SWCLK / SWDIO</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!------------------------------ HOW TO RUN ------------------------------>
+<div class="card">
+  <h2><span class="accent-line accent-amber"></span> ▶️ 如何运行</h2>
+
+  <div class="steps">
+    <div class="step-item">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <h4>安装 Code Composer Studio</h4>
+        <p>版本 v12+，通过 Resource Explorer 安装 <strong>MSPM0 SDK 2.10.00.04</strong></p>
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <h4>导入项目</h4>
+        <div class="cmd-box">
+          <code>Project → Import CCS Projects → Browse</code>
+          <span class="tag">选择目录</span>
+        </div>
+        <p style="margin-top:6px;">选择 <code>E:\TI\project\new\car.102</code> → Finish</p>
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <h4>连接调试器</h4>
+        <p>SEGGER J-Link 连接至目标板：<code>SWCLK→PA20</code> <code>SWDIO→PA19</code> <code>GND</code> <code>3.3V</code></p>
+      </div>
+    </div>
+    <div class="step-item">
+      <div class="step-num">4</div>
+      <div class="step-body">
+        <h4>构建 & 烧录</h4>
+        <div class="cmd-box">
+          <code>构建: Ctrl + B &nbsp;&nbsp;|&nbsp;&nbsp; 调试: F11</code>
+          <span class="tag">一键烧录</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tip-box">
+    <span class="tip-icon">💡</span>
+    <div class="tip-content">
+      <strong>调试提示：</strong> 接蓝牙模块 (HC-08/HC-05) 到 PA10 (TX)，PC 端用串口助手查看数据：<br>
+      <pre class="code-block" style="margin:8px 0 0;">dev:+123 L: 45 R: 35 cnt:2 SL: 40 SR: 38</pre>
+      <span style="font-size:0.8rem; color:var(--muted2);">dev=偏差 L/R=左右PWM cnt=传感器数 SL/SR=左右编码器速度</span>
+      <span class="cursor-blink"></span>
+    </div>
+  </div>
+</div>
+
+<!------------------------------ CHECKLIST ------------------------------>
+<div class="card">
+  <h2><span class="accent-line accent-green"></span> ✅ 硬件接线清单</h2>
+  <div class="checklist">
+    <div class="check-item"><span class="box"></span>左电机: PA17/PA18 + PWM PB8</div>
+    <div class="check-item"><span class="box"></span>右电机: PB9/PA15 + PWM PA14</div>
+    <div class="check-item"><span class="box"></span>编码器A: PA22/PA21</div>
+    <div class="check-item"><span class="box"></span>编码器B: PA24/PA23</div>
+    <div class="check-item"><span class="box"></span>灰度传感器: 8路IO</div>
+    <div class="check-item"><span class="box"></span>OLED: SCL PA12 / SDA PA13</div>
+    <div class="check-item"><span class="box"></span>蓝牙模块: TX→PA10</div>
+    <div class="check-item"><span class="box"></span>蜂鸣器: PA27</div>
+    <div class="check-item"><span class="box"></span>电机电源 + 逻辑电源</div>
+    <div class="check-item"><span class="box"></span>J-Link: SWCLK/SWDIO/GND</div>
+  </div>
+</div>
+
+<!------------------------------ FOOTER ------------------------------>
+<footer class="footer">
+  Car.102 · 生成于 2026-05-16 · MSPM0G3507 Line-following Robot · TI Code Composer Studio
+</footer>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,31 @@
+# Code Composer Studio
+.Debug/
+Debug/
+Release/
+${ConfigName}/
+${ProjName}.ccsproject
+${ProjName}.cproject
+
+# Build artifacts
+*.obj
+*.out
+*.hex
+*.map
+*.bin
+*.elf
+
+# IDE (排除编译输出和本地设置，保留项目文件)
+.settings/
+.launches/
+.load/
+.xdc/
+.cdefaults.xml
+
+# Clangd
+.clangd
+compile_commands.json
+.cache/
+
+# OS
+Thumbs.db
+.DS_Store
