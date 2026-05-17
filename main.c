@@ -62,6 +62,10 @@ int main(void)
     /* 开启编码器 50ms 速度采样定时器 */
     NVIC_EnableIRQ(TIMER_Encoder_Read_INST_INT_IRQN);
 
+    /* 开启 K230 UART RX 中断 */
+    NVIC_EnableIRQ(UART_VISION_INST_INT_IRQN);
+    DL_UART_Main_enableInterrupt(UART_VISION_INST, DL_UART_MAIN_INTERRUPT_RX);
+
     /* ---- PID 参数初始化 ---- */
     /* 转向环 (灰度偏差→差速): Kp 控制转向力度 */
     PID_Init(&pid_turn, 0.8f, 0.005f, 0.3f, 30.0f, 60.0f);

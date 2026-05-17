@@ -29,3 +29,7 @@ compile_commands.json
 # OS
 Thumbs.db
 .DS_Store
+
+# Auto-generated docs
+docs-docmd/
+docs-mkdocs/

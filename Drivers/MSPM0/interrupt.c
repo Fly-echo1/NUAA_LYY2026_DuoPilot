@@ -136,3 +136,65 @@ void GROUP1_IRQHandler(void)
             break;
     }
 }
+
+/* ===== K230 UART Ring Buffer ===== */
+volatile uint8_t  k230_rx_buf[K230_RX_BUF_SIZE];
+volatile uint16_t k230_rx_head = 0;
+volatile uint16_t k230_rx_tail = 0;
+
+bool k230_read_line(uint8_t *line, uint16_t *len)
+{
+    if (!line || !len)
+        return false;
+
+    uint32_t key = __get_PRIMASK();
+    __disable_irq();
+
+    bool found = false;
+    uint16_t tail = k230_rx_tail;
+    uint16_t bytes = 0;
+
+    /* Scan ring buffer for '\n' starting from tail */
+    while (tail != k230_rx_head && bytes < K230_LINE_BUF_SIZE - 1)
+    {
+        uint8_t c = k230_rx_buf[tail];
+        line[bytes++] = c;
+        tail = (tail + 1) % K230_RX_BUF_SIZE;
+
+        if (c == '\n')
+        {
+            found = true;
+            break;
+        }
+    }
+
+    if (found)
+    {
+        line[bytes] = '\0';           /* null-terminate */
+        *len = bytes;                 /* report line length */
+        k230_rx_tail = tail;         /* consume the line */
+    }
+
+    __set_PRIMASK(key);
+    return found;
+}
+
+/* UART1_IRQHandler — K230 AprilTag data RX */
+void UART1_IRQHandler(void)
+{
+    uint32_t status = DL_UART_Main_getInterruptStatus(UART_VISION_INST);
+
+    if (status & DL_UART_MAIN_INTERRUPT_RX)
+    {
+        while (!DL_UART_isRXFIFOEmpty(UART_VISION_INST))
+        {
+            uint8_t data = DL_UART_Main_receiveData(UART_VISION_INST);
+            uint16_t next = (k230_rx_head + 1) % K230_RX_BUF_SIZE;
+            if (next != k230_rx_tail)  /* buffer not full */
+            {
+                k230_rx_buf[k230_rx_head] = data;
+                k230_rx_head = next;
+            }
+        }
+    }
+}
