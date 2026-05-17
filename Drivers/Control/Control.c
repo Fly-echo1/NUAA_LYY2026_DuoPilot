@@ -140,3 +140,41 @@ void k230_parse_line(uint8_t *line)
         p++;
     }
 }
+
+/* ===== Buzzer ===== */
+void buzzer_on(void)
+{
+    DL_GPIO_setPins(GPIO_BEEP_PORT, GPIO_BEEP_PIN_BEEP_PIN);
+}
+
+void buzzer_off(void)
+{
+    DL_GPIO_clearPins(GPIO_BEEP_PORT, GPIO_BEEP_PIN_BEEP_PIN);
+}
+
+/* ===== Distance PID ===== */
+#define DIST_PID_TARGET     20
+#define DIST_PID_KP         2.0f
+#define DIST_PID_KI         0.05f
+#define DIST_PID_KD         0.0f
+#define DIST_PID_INTEGRAL_LIMIT   10.0f
+#define DIST_PID_OUTPUT_LIMIT     20.0f
+
+#define FOLLOW_SPEED_MIN    20
+#define FOLLOW_SPEED_MAX    60
+#define FOLLOW_SPEED_DEFAULT 40
+
+void distance_pid_init(float Kp, float Ki, float Kd,
+                       float integral_limit, float output_limit)
+{
+    PID_Init(&pid_distance, Kp, Ki, Kd, integral_limit, output_limit);
+}
+
+float distance_pid_calculate(int16_t current_dist, int16_t target_dist)
+{
+    if (current_dist < 0)
+        return 0.0f;
+
+    float error = (float)(current_dist - target_dist);
+    return PID_Calculate(&pid_distance, error);
+}
