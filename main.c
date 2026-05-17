@@ -43,6 +43,7 @@ uint8_t oled_buffer[64];
 uint8_t Grayscale_buffer[8];
 uint8_t sensor_values[GRAYSCALE_CHANNELS]; // 定义数组存储8路数据
 char grayscale_str[GRAYSCALE_CHANNELS + 1]; //用于OLED显示的字符串
+static uint8_t k230_line[K230_LINE_BUF_SIZE]; // K230 AprilTag 数据行缓冲区
 
 int main(void)
 {
@@ -74,6 +75,12 @@ int main(void)
     PID_Init(&pid_speed_L, 0.5f, 0.01f, 0.1f, 20.0f, 50.0f);
     PID_Init(&pid_speed_R, 0.5f, 0.01f, 0.1f, 20.0f, 50.0f);
 
+    /* 距离PID初始化 (自适应巡航: 目标距前车20cm) */
+    distance_pid_init(2.0f, 0.05f, 0.0f, 10.0f, 20.0f);
+
+    /* 确保蜂鸣器初始关闭 */
+    buzzer_off();
+
     /* 蜂鸣器响一声表示系统启动 */
     DL_GPIO_setPins(GPIO_BEEP_PORT, GPIO_BEEP_PIN_BEEP_PIN);
     delay_cycles(3200000);
@@ -100,10 +107,55 @@ int main(void)
 
     while (1)
     {
-        /* ========== 1. 读取8路灰度传感器 ========== */
+        /* ===== 1. 读取8路灰度传感器 ===== */
         Grayscale_Sensor_Read_All(sensor_values);
 
-        /* ========== 2. 计算灰度偏差 ========== */
+        /* ===== 2. 读取 K230 AprilTag 数据 (环形缓冲区) ===== */
+        {
+            uint16_t k230_line_len;
+            if (k230_read_line(k230_line, &k230_line_len))
+                k230_parse_line(k230_line);
+        }
+
+        /* ===== 3. 蓝牙 "OV" 超车指令检测 (HC-05 UART0) ===== */
+        {
+            static uint8_t bt_match = 0;
+            while (!DL_UART_isRXFIFOEmpty(UART_BLUETEETH_INST))
+            {
+                uint8_t c = DL_UART_Main_receiveData(UART_BLUETEETH_INST);
+                if (c == 'O')
+                    bt_match = 1;
+                else if (bt_match == 1 && c == 'V')
+                {
+                    if (g_follower_state == FOLLOWER_FOLLOWING)
+                        overtaking_start();
+                    bt_match = 0;
+                }
+                else if (c == '\n' || c == '\r')
+                {
+                    /* 忽略换行符 */
+                }
+                else
+                {
+                    bt_match = 0;
+                }
+            }
+        }
+
+        /* ===== 4. 状态机派发 ===== */
+        if (g_follower_state == FOLLOWER_OVERTAKING)
+        {
+            overtaking_update(tick_ms);
+
+            /* OLED 显示超车阶段 */
+            sprintf((char *)oled_buffer, "OV%02d", (int)g_ov_phase);
+            OLED_ShowString(5*6, 0, oled_buffer, 8);
+
+            mspm0_delay_ms(20);
+            continue;
+        }
+
+        /* ===== 5. 灰度偏差计算 (跟随模式) ===== */
         uint8_t sensor_count, pattern;
         float deviation = Grayscale_CalcError(sensor_values, &sensor_count, &pattern);
 
@@ -125,15 +177,22 @@ int main(void)
         }
         else
         {
-            /* 正常检测到线 */
             no_line_count = 0;
         }
 
-        /* ========== 3. 转向环 PID ========== */
+        /* ===== 6. 距离 PID (自适应巡航, 目标距前车 20cm) ===== */
+        float distance_adjust = 0.0f;
+        if (g_k230_data.distance_cm > 0)
+        {
+            distance_adjust = distance_pid_calculate(g_k230_data.distance_cm, 20);
+            distance_adjust = CLAMP(distance_adjust, -10.0f, 10.0f);
+        }
+
+        /* ===== 7. 转向环 PID ===== */
         float turn_output = PID_Calculate(&pid_turn, deviation);
         last_deviation = deviation;
 
-        /* ========== 4. 计算目标速度 ========== */
+        /* ===== 8. 计算目标速度 (转向差速 + 距离修正) ===== */
         int16_t target_speed_L, target_speed_R;
 
         if (no_line_count > 10)
@@ -144,34 +203,27 @@ int main(void)
         }
         else
         {
-            /* 差速转向: 转向环输出直接修正左右轮目标速度 */
-            target_speed_L = base_speed + (int16_t)turn_output;
-            target_speed_R = base_speed - (int16_t)turn_output;
-
-            /* 限幅 */
+            target_speed_L = base_speed + (int16_t)turn_output + (int16_t)distance_adjust;
+            target_speed_R = base_speed - (int16_t)turn_output + (int16_t)distance_adjust;
             target_speed_L = CLAMP(target_speed_L, 0, 100);
             target_speed_R = CLAMP(target_speed_R, 0, 100);
         }
 
-        /* ========== 5. 速度环 PID (编码器反馈) ========== */
-        /* 注: 编码器速度 encoder_left_speed 每50ms更新一次, */
-        /*     20ms控制周期下同一数值会持续2-3个周期 */
+        /* ===== 9. 速度环 PID (编码器反馈 → PWM) ===== */
         float speed_out_L = PID_Calculate(&pid_speed_L,
                               (float)(target_speed_L - encoder_left_speed));
         float speed_out_R = PID_Calculate(&pid_speed_R,
                               (float)(target_speed_R - encoder_right_speed));
 
-        /* 速度环输出作为最终PWM值 */
         motor_output_L = (float)target_speed_L + speed_out_L;
         motor_output_R = (float)target_speed_R + speed_out_R;
 
-        /* 限幅 [0, 100] */
         motor_output_L = CLAMP(motor_output_L, 0.0f, 100.0f);
         motor_output_R = CLAMP(motor_output_R, 0.0f, 100.0f);
 
         Motor_SetSpeed((int16_t)motor_output_L, (int16_t)motor_output_R);
 
-        /* ========== 6. OLED 显示 ========== */
+        /* ===== 10. OLED 显示 ===== */
         /* 偏差 */
         sprintf((char *)oled_buffer, "%+4d", (int16_t)deviation);
         OLED_ShowString(5*6, 0, oled_buffer, 8);
@@ -182,7 +234,7 @@ int main(void)
         sprintf((char *)oled_buffer, "%-3d", (int16_t)motor_output_R);
         OLED_ShowString(9*6, 2, oled_buffer, 8);
 
-        /* PID分量 (转向环的P,I,D用于显示) */
+        /* PID分量 (转向环) */
         sprintf((char *)oled_buffer, "%5.1f", pid_turn.Kp * deviation);
         OLED_ShowString(3*6, 4, oled_buffer, 8);
         sprintf((char *)oled_buffer, "%5.1f", pid_turn.integral);
@@ -190,24 +242,30 @@ int main(void)
         sprintf((char *)oled_buffer, "%5.1f", pid_turn.Kd * (deviation - pid_turn.last_error));
         OLED_ShowString(16*6, 4, oled_buffer, 8);
 
-        /* 编码器速度 */
+        /* 编码器速度 (左轮) + K230 距离 */
         sprintf((char *)oled_buffer, "%-3d", encoder_left_speed);
         OLED_ShowString(5*6, 6, oled_buffer, 8);
+        if (g_k230_data.distance_cm > 0)
+        {
+            sprintf((char *)oled_buffer, "D%-2d", g_k230_data.distance_cm);
+            OLED_ShowString(12*6, 6, oled_buffer, 8);
+        }
 
-        /* 灰度二进制串（底部）和传感器计数 */
+        /* 灰度二进制串 (底部) */
         for (int i = 0; i < GRAYSCALE_CHANNELS; i++)
             grayscale_str[i] = sensor_values[i] ? '1' : '0';
         grayscale_str[GRAYSCALE_CHANNELS] = '\0';
         OLED_ShowString(0, 7, (uint8_t *)grayscale_str, 8);
 
-        /* ========== 7. 蓝牙调试输出 ========== */
+        /* ===== 11. 蓝牙调试输出 ===== */
         sprintf((char *)oled_buffer,
-                "dev:%+4d L:%3d R:%3d cnt:%d SL:%3d SR:%3d\r\n",
+                "dev:%+4d L:%3d R:%3d cnt:%d SL:%3d SR:%3d D:%3d\r\n",
                 (int16_t)deviation, (int16_t)motor_output_L, (int16_t)motor_output_R,
-                sensor_count, encoder_left_speed, encoder_right_speed);
+                sensor_count, encoder_left_speed, encoder_right_speed,
+                g_k230_data.distance_cm);
         uart0_send_string((char *)oled_buffer);
 
-        /* ========== 8. 控制周期 ≈ 50Hz ========== */
+        /* ===== 12. 控制周期 ≈ 50Hz ===== */
         mspm0_delay_ms(20);
     }
 
