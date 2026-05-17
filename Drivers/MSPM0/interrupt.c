@@ -182,7 +182,8 @@ bool k230_read_line(uint8_t *line, uint16_t *len)
 /* UART1_IRQHandler — K230 AprilTag data RX */
 void UART1_IRQHandler(void)
 {
-    uint32_t status = DL_UART_Main_getInterruptStatus(UART_VISION_INST);
+    uint32_t status = DL_UART_Main_getEnabledInterruptStatus(UART_VISION_INST,
+                                                              DL_UART_MAIN_INTERRUPT_RX);
 
     if (status & DL_UART_MAIN_INTERRUPT_RX)
     {
