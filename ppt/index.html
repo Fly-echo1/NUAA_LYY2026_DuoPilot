@@ -3,20 +3,24 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Car.102 · 基于 MSPM0G3507 的智能循迹小车项目报告</title>
+<title>[必填] 替换为 PPT 标题 · Deck Title</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,700&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400&family=IBM+Plex+Mono:wght@300;400;500;600&family=Noto+Serif+SC:wght@300;400;500;600;700;900&family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
 <style>
   :root{
-    /* 🌊 靛蓝瓷 (Indigo Porcelain) — 科技/工程/数据 */
-    --ink:#0a1f3d;
-    --ink-rgb:10,31,61;
-    --paper:#f1f3f5;
-    --paper-rgb:241,243,245;
-    --paper-tint:#e4e8ec;
-    --ink-tint:#152a4a;
+    /* ============ 主题色(默认:🖋 墨水经典) ============
+       切换主题:从 references/themes.md 复制对应的 :root 块
+       整体替换这几行(--ink / --ink-rgb / --paper / --paper-rgb)
+       其他地方散落的 rgba() 都走 var(--ink-rgb) / var(--paper-rgb),无需逐处改 */
+    --ink:#0a0a0b;
+    --ink-rgb:10,10,11;
+    --paper:#f1efea;
+    --paper-rgb:241,239,234;
+    --paper-tint:#e8e5de;
+    --ink-tint:#18181a;
 
+    /* ============ 字体(跨主题固定) ============ */
     --mono:"IBM Plex Mono",ui-monospace,monospace;
     --serif-en:"Playfair Display","Source Serif 4",Georgia,serif;
     --serif-body-en:"Source Serif 4",Georgia,serif;
@@ -26,26 +30,33 @@
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{width:100%;height:100%;overflow:hidden;background:var(--ink);color:var(--paper);font-family:var(--sans-zh);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
 
+  /* ============ WebGL 双背景 ============ */
   canvas.bg{position:fixed;inset:0;width:100vw;height:100vh;z-index:0;display:block;transition:opacity 1.2s ease}
   canvas#bg-light{opacity:0}
   canvas#bg-dark{opacity:1}
   body.light-bg canvas#bg-light{opacity:1}
   body.light-bg canvas#bg-dark{opacity:0}
 
+  /* ============ Deck 容器 + 翻页 ============ */
+  /* width: NSLIDES * 100vw，会在 JS 里动态矫正 */
   #deck{position:fixed;inset:0;width:10000vw;height:100vh;display:flex;flex-wrap:nowrap;transition:transform .9s cubic-bezier(.77,0,.175,1);z-index:10;will-change:transform}
   .slide{width:100vw;height:100vh;flex:0 0 100vw;position:relative;padding:6vh 6vw 10vh 6vw;display:flex;flex-direction:column;overflow:hidden}
   .slide.light{color:var(--ink);background:var(--paper)}
   .slide.dark{color:var(--paper);background:var(--ink)}
 
+  /* 默认页：遮罩较厚，保证文字可读 */
   .slide::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;transition:background .7s ease}
   .slide.light::before{background:rgba(var(--paper-rgb),.78);backdrop-filter:blur(3px)}
   .slide.dark::before{background:rgba(var(--ink-rgb),.78);backdrop-filter:blur(3px)}
+  /* Hero 页：遮罩大幅降低，让 WebGL 背景明显透出 */
   .slide.hero.light::before{background:rgba(var(--paper-rgb),.16);backdrop-filter:none}
   .slide.hero.dark::before{background:rgba(var(--ink-rgb),.12);backdrop-filter:none}
+  /* Hero 页顶底微弱渐隐，保证 chrome/foot 区域可读 */
   .slide.hero::after{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none}
   .slide.hero.light::after{background:linear-gradient(180deg,rgba(var(--paper-rgb),.28) 0%,rgba(var(--paper-rgb),0) 14%,rgba(var(--paper-rgb),0) 86%,rgba(var(--paper-rgb),.28) 100%)}
   .slide.hero.dark::after{background:linear-gradient(180deg,rgba(var(--ink-rgb),.32) 0%,rgba(var(--ink-rgb),0) 14%,rgba(var(--ink-rgb),0) 86%,rgba(var(--ink-rgb),.32) 100%)}
 
+  /* ============ Magazine chrome：顶部 meta + 底部 foot ============ */
   .chrome{display:flex;justify-content:space-between;align-items:flex-start;font-family:var(--mono);font-size:12px;letter-spacing:.18em;text-transform:uppercase;opacity:.7}
   .chrome .left,.chrome .right{display:flex;gap:2.4em;align-items:center}
   .chrome .sep{width:40px;height:1px;background:currentColor;opacity:.4}
@@ -56,6 +67,11 @@
   .rule{width:100%;height:1px;background:currentColor;opacity:.25;margin:3vh 0}
   .rule.v{width:1px;height:100%;margin:0}
 
+  /* ============ 字体规则 ============
+     · 衬线（Noto Serif SC / Playfair）：大标题、重点金句、数字
+     · 非衬线（Noto Sans SC）：正文描述、body、补充说明
+     · 等宽（IBM Plex Mono）：kicker、meta 小标签、foot 右侧
+  */
   .kicker{font-family:var(--mono);font-size:12px;letter-spacing:.3em;text-transform:uppercase;opacity:.6;margin-bottom:2.6vh}
   .display{font-family:var(--serif-en);font-weight:700;font-size:11vw;line-height:.92;letter-spacing:-.025em}
   .display-zh{font-family:var(--serif-zh);font-weight:700;font-size:7.8vw;line-height:1.04;letter-spacing:-.005em}
@@ -72,6 +88,7 @@
   em{font-style:italic;font-family:var(--serif-en)}
   .en{font-family:var(--serif-en);font-style:italic;font-weight:500}
 
+  /* ============ 布局工具 ============ */
   .col{display:flex;flex-direction:column;gap:2.4vh}
   .row{display:flex;align-items:center;gap:3vw}
   .grid-6{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,1fr);gap:4vw 6vw;flex:1;align-content:center;padding:2vh 0}
@@ -86,46 +103,66 @@
   .bottom-right{position:absolute;right:6vw;bottom:9vh;max-width:50vw;text-align:right}
   .top-right{position:absolute;right:6vw;top:6vh;text-align:right}
 
+  /* ============ Stat（数字矩阵） ============ */
   .stat{display:flex;flex-direction:column;gap:1vh;align-items:flex-start}
   .stat .n{font-family:var(--serif-en);font-weight:800;font-size:8vw;line-height:.88;letter-spacing:-.03em;font-feature-settings:"tnum"}
   .stat .l{font-family:var(--sans-zh);font-size:max(13px,1.05vw);opacity:.7;margin-top:1vh;font-weight:400;line-height:1.5}
   .stat .m{font-family:var(--mono);font-size:10px;letter-spacing:.22em;text-transform:uppercase;opacity:.5;margin-bottom:.2vh}
 
+  /* ============ Callout（引用框） ============ */
   .callout{padding:3vh 2.4vw;border-left:3px solid currentColor;position:relative;font-family:var(--serif-zh);font-size:max(15px,1.2vw);line-height:1.55;opacity:.92}
   .slide.light .callout{background:rgba(var(--ink-rgb),.05)}
   .slide.dark .callout{background:rgba(var(--paper-rgb),.06)}
   .callout .cite{display:block;margin-top:1.6vh;font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;opacity:.6}
   .callout .q-big{font-family:var(--serif-zh);font-weight:600;font-size:max(17px,1.6vw);line-height:1.42}
 
+  /* ============ Platform（平台卡） ============ */
   .plat{display:flex;flex-direction:column;justify-content:flex-end;padding:2vh 0;border-top:1px solid currentColor;border-color:rgba(127,127,127,.35)}
   .plat .name{font-family:var(--serif-zh);font-weight:700;font-size:1.8vw;margin-bottom:.6vh}
   .plat .nb{font-family:var(--serif-en);font-weight:700;font-size:3.2vw;letter-spacing:-.02em;line-height:1;font-feature-settings:"tnum"}
   .plat .sub{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;opacity:.55;margin-top:.6vh}
   .plat .fill{font-family:var(--sans-zh);font-weight:300;font-size:2.4vw;opacity:.28;letter-spacing:-.01em;line-height:1}
 
+  /* ============ Rowline（表格行） ============ */
   .rowline{display:grid;grid-template-columns:1fr 2fr 1fr;gap:2vw;padding:2.2vh 0;border-top:1px solid currentColor;align-items:center;border-color:rgba(127,127,127,.25)}
   .rowline:last-child{border-bottom:1px solid currentColor;border-color:rgba(127,127,127,.25)}
   .rowline .k{font-family:var(--serif-zh);font-weight:700;font-size:1.7vw}
   .rowline .v{font-family:var(--sans-zh);font-weight:400;font-size:max(14px,1.2vw);opacity:.85;line-height:1.55}
   .rowline .m{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;opacity:.6;justify-self:end}
 
+  /* ============ Pillar（支柱卡片） ============ */
   .pillar{display:flex;flex-direction:column;gap:1.8vh}
   .pillar .ic{font-family:var(--serif-en);font-style:italic;font-size:2.6vw;opacity:.45;font-weight:400}
   .pillar .ic svg{width:2.8vw;height:2.8vw;stroke-width:1.2;opacity:.7}
   .pillar .t{font-family:var(--serif-zh);font-weight:700;font-size:2.4vw;line-height:1.1}
   .pillar .d{font-family:var(--sans-zh);font-weight:400;font-size:max(14px,1.1vw);opacity:.76;line-height:1.6}
 
+  /* ============ Signature / Highlight ============ */
   .sign{font-family:var(--serif-en);font-style:italic;font-weight:500;font-size:2vw;opacity:.7}
   .hi{position:relative;display:inline}
   .slide.dark .hi::after{content:"";position:absolute;left:-.1em;right:-.1em;bottom:-.05em;height:.28em;background:rgba(var(--paper-rgb),.15);z-index:-1}
   .slide.light .hi::after{content:"";position:absolute;left:-.1em;right:-.1em;bottom:-.05em;height:.28em;background:rgba(var(--ink-rgb),.08);z-index:-1}
 
+  /* ============ Icons（Lucide via CDN） ============ */
   .ico{width:1em;height:1em;display:inline-block;vertical-align:-.12em;stroke:currentColor;fill:none;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
   .ico-lg,.ico-md,.ico-sm{fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round}
   .ico-lg{width:2.6vw;height:2.6vw;stroke-width:1.2;display:inline-block}
   .ico-md{width:1.8vw;height:1.8vw;stroke-width:1.3;display:inline-block;vertical-align:-.4em}
   .ico-sm{width:1.1vw;height:1.1vw;stroke-width:1.4;display:inline-block;vertical-align:-.15em;opacity:.7}
 
+  /* ============ 图片占位（虚线框，提示设计师位置） ============ */
+  .img-slot{border:1.5px dashed rgba(127,127,127,.4);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1vh;padding:2vh 2vw;font-family:var(--mono);font-size:10px;letter-spacing:.28em;text-transform:uppercase;opacity:.55;position:relative;aspect-ratio:16/9;width:100%;max-height:56vh;margin-inline:auto;box-sizing:border-box}
+  .img-slot::before{content:"";position:absolute;inset:8px;border:1px solid currentColor;opacity:.2}
+  .img-slot .plus{font-size:2vw;font-weight:300;opacity:.5;letter-spacing:0}
+  .img-slot .label{position:relative;z-index:2;text-align:center}
+  .img-slot.r-4x3{aspect-ratio:4/3}
+  .img-slot.r-3x2{aspect-ratio:3/2}
+  .img-slot.r-1x1{aspect-ratio:1/1}
+
+  /* ============ 图片实填框（关键：固定高度 + 只裁底部） ============
+     重要约束：高度用内联 height:Nvh 精确控制，不要用 aspect-ratio（会撑破布局）
+     object-position:top center 保证严禁裁剪顶部和左右，只裁剪底部
+  */
   .frame-img{overflow:hidden;position:relative;background:rgba(0,0,0,.04);box-sizing:border-box;width:100%;border-radius:4px}
   .slide.dark .frame-img{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.12)}
   .frame-img > img{width:100%;height:100%;object-fit:cover;object-position:top center;display:block}
@@ -148,6 +185,7 @@
   figure.tile{display:flex;flex-direction:column;margin:0;min-width:0}
   figure.tile > .frame-img{flex:0 0 auto}
 
+  /* ============ 导航 ============ */
   #nav{position:fixed;left:50%;bottom:2.6vh;transform:translateX(-50%);z-index:30;display:flex;gap:10px;padding:8px 14px;border-radius:999px;background:rgba(0,0,0,.18);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
   #nav .dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.3);cursor:pointer;transition:all .3s ease;border:0;padding:0}
   #nav .dot:hover{background:rgba(255,255,255,.5);transform:scale(1.15)}
@@ -157,47 +195,228 @@
   body.light-bg #nav .dot.active{background:rgba(var(--ink-rgb),.9)}
   #hint{position:fixed;bottom:3vh;right:3vw;z-index:30;font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;opacity:.4;mix-blend-mode:difference;color:#aaa}
 
+  /* ============================================================
+     ============ LAYOUTS API · 面向 agent 的类（v2）============
+     所有 layouts.md 中的骨架都基于下面这套命名。
+     如果你在 layouts.md 里看到某个类，它必须在下面有定义。
+     ============================================================ */
+
+  /* ---------- .frame：每页主内容容器 ---------- */
   .frame{flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden}
-  .frame.grid-2-7-5,.frame.grid-2-6-6,.frame.grid-2-8-4,.frame.grid-3-3,.frame.grid-6{display:grid}
+  /* 当 .frame 同时加了 grid 类时，grid 的 display:grid 覆盖 flex */
+  .frame.grid-2-7-5,
+  .frame.grid-2-6-6,
+  .frame.grid-2-8-4,
+  .frame.grid-3-3,
+  .frame.grid-6{display:grid}
 
-  .h-hero{font-family:var(--serif-zh);font-weight:900;font-size:10vw;line-height:.96;letter-spacing:-.02em;}
-  .h-xl{font-family:var(--serif-zh);font-weight:700;font-size:6.2vw;line-height:1.08;letter-spacing:-.01em;}
-  .h-sub{font-family:var(--serif-zh);font-weight:500;font-size:3.1vw;line-height:1.25;letter-spacing:0;opacity:.7;}
-  .h-md{font-family:var(--serif-zh);font-weight:600;font-size:2.3vw;line-height:1.3;}
+  /* ---------- 标题层级（API 名称，衬线为主） ---------- */
+  .h-hero{
+    font-family:var(--serif-zh);
+    font-weight:900;
+    font-size:10vw;
+    line-height:.96;
+    letter-spacing:-.02em;
+  }
+  .h-xl{
+    font-family:var(--serif-zh);
+    font-weight:700;
+    font-size:6.2vw;
+    line-height:1.08;
+    letter-spacing:-.01em;
+  }
+  .h-sub{
+    font-family:var(--serif-zh);
+    font-weight:500;
+    font-size:3.1vw;
+    line-height:1.25;
+    letter-spacing:0;
+    opacity:.7;
+  }
+  .h-md{
+    font-family:var(--serif-zh);
+    font-weight:600;
+    font-size:2.3vw;
+    line-height:1.3;
+  }
+  /* 英文标题专用（Playfair 衬线） */
   .h-hero-en,.h-xl-en{font-family:var(--serif-en);letter-spacing:-.025em}
-  .lead{font-family:var(--serif-zh);font-weight:400;font-size:1.75vw;line-height:1.5;opacity:.86;}
-  .meta-row{display:flex;gap:1.2em;align-items:baseline;flex-wrap:wrap;font-family:var(--mono);font-size:max(12px,.92vw);letter-spacing:.16em;text-transform:uppercase;opacity:.6;}
 
-  .stat-card{display:flex;flex-direction:column;gap:.8vh;align-items:flex-start;padding-top:1.6vh;border-top:1px solid currentColor;border-color:rgba(127,127,127,.3);}
-  .stat-card .stat-label{font-family:var(--mono);font-size:max(10px,.78vw);letter-spacing:.24em;text-transform:uppercase;opacity:.55;}
-  .stat-card .stat-nb{font-family:var(--serif-en);font-weight:800;font-size:5.8vw;line-height:.9;letter-spacing:-.03em;font-feature-settings:"tnum";margin-top:.4vh;}
-  .stat-card .stat-nb .stat-unit{font-family:var(--serif-zh);font-weight:500;font-size:.38em;letter-spacing:0;opacity:.72;margin-left:.14em;}
-  .stat-card .stat-note{font-family:var(--sans-zh);font-weight:400;font-size:max(13px,1.05vw);line-height:1.5;opacity:.72;margin-top:.6vh;}
+  /* ---------- lead 引语 ---------- */
+  .lead{
+    font-family:var(--serif-zh);
+    font-weight:400;
+    font-size:1.75vw;
+    line-height:1.5;
+    opacity:.86;
+  }
+
+  /* ---------- meta-row 底部元数据 ---------- */
+  .meta-row{
+    display:flex;
+    gap:1.2em;
+    align-items:baseline;
+    flex-wrap:wrap;
+    font-family:var(--mono);
+    font-size:max(12px,.92vw);
+    letter-spacing:.16em;
+    text-transform:uppercase;
+    opacity:.6;
+  }
+
+  /* ---------- stat-card（数据大字报用） ---------- */
+  .stat-card{
+    display:flex;
+    flex-direction:column;
+    gap:.8vh;
+    align-items:flex-start;
+    padding-top:1.6vh;
+    border-top:1px solid currentColor;
+    border-color:rgba(127,127,127,.3);
+  }
+  .stat-card .stat-label{
+    font-family:var(--mono);
+    font-size:max(10px,.78vw);
+    letter-spacing:.24em;
+    text-transform:uppercase;
+    opacity:.55;
+  }
+  .stat-card .stat-nb{
+    font-family:var(--serif-en);
+    font-weight:800;
+    font-size:5.8vw;
+    line-height:.9;
+    letter-spacing:-.03em;
+    font-feature-settings:"tnum";
+    margin-top:.4vh;
+  }
+  .stat-card .stat-nb .stat-unit{
+    font-family:var(--serif-zh);
+    font-weight:500;
+    font-size:.38em;
+    letter-spacing:0;
+    opacity:.72;
+    margin-left:.14em;
+  }
+  .stat-card .stat-note{
+    font-family:var(--sans-zh);
+    font-weight:400;
+    font-size:max(13px,1.05vw);
+    line-height:1.5;
+    opacity:.72;
+    margin-top:.6vh;
+  }
+  /* 当 stat-card 用于 grid-4（2x2），数字适度放大；若页面有标题+引文在上方，可内联 style 覆盖为更小值 */
   .grid-4 .stat-card .stat-nb{font-size:5vw}
+  /* 当只有 3 个，字也可以稍大 */
   .grid-3 .stat-card .stat-nb{font-size:6.8vw}
 
-  .pipeline-section{margin-top:4.4vh;padding-top:2.8vh;border-top:1px dashed rgba(127,127,127,.32);}
-  .pipeline-section:first-of-type{border-top:0;padding-top:0;margin-top:3vh;}
-  .pipeline-label{font-family:var(--mono);font-size:max(11px,.85vw);letter-spacing:.24em;text-transform:uppercase;opacity:.62;margin-bottom:2.2vh;}
-  .pipeline{display:grid;grid-template-columns:repeat(5,1fr);gap:1.2vw;}
+  /* ---------- pipeline（流水线） ---------- */
+  .pipeline-section{
+    margin-top:4.4vh;
+    padding-top:2.8vh;
+    border-top:1px dashed rgba(127,127,127,.32);
+  }
+  .pipeline-section:first-of-type{
+    border-top:0;
+    padding-top:0;
+    margin-top:3vh;
+  }
+  .pipeline-label{
+    font-family:var(--mono);
+    font-size:max(11px,.85vw);
+    letter-spacing:.24em;
+    text-transform:uppercase;
+    opacity:.62;
+    margin-bottom:2.2vh;
+  }
+  .pipeline{
+    display:grid;
+    grid-template-columns:repeat(5,1fr);
+    gap:1.2vw;
+  }
   .pipeline[data-cols="3"]{grid-template-columns:repeat(3,1fr)}
   .pipeline[data-cols="4"]{grid-template-columns:repeat(4,1fr)}
   .pipeline[data-cols="6"]{grid-template-columns:repeat(6,1fr)}
-  .step{display:flex;flex-direction:column;gap:.8vh;padding-top:1.4vh;border-top:1px solid currentColor;border-color:rgba(127,127,127,.35);}
-  .step-nb{font-family:var(--serif-en);font-style:italic;font-weight:500;font-size:1.15vw;opacity:.45;}
-  .step-title{font-family:var(--sans-zh);font-weight:700;font-size:1.55vw;letter-spacing:.01em;line-height:1.2;}
-  .step-desc{font-family:var(--sans-zh);font-weight:400;font-size:max(12px,.95vw);line-height:1.45;opacity:.72;}
+  .step{
+    display:flex;
+    flex-direction:column;
+    gap:.8vh;
+    padding-top:1.4vh;
+    border-top:1px solid currentColor;
+    border-color:rgba(127,127,127,.35);
+  }
+  .step-nb{
+    font-family:var(--serif-en);
+    font-style:italic;
+    font-weight:500;
+    font-size:1.15vw;
+    opacity:.45;
+  }
+  .step-title{
+    font-family:var(--sans-zh);
+    font-weight:700;
+    font-size:1.55vw;
+    letter-spacing:.01em;
+    line-height:1.2;
+  }
+  .step-desc{
+    font-family:var(--sans-zh);
+    font-weight:400;
+    font-size:max(12px,.95vw);
+    line-height:1.45;
+    opacity:.72;
+  }
 
+  /* ---------- 网格（layouts.md 所用） ---------- */
+  /* 这些类独立挂到任何容器上都能生效，不依赖 .frame 复合选择器 */
   .grid-2-7-5{display:grid;grid-template-columns:7fr 5fr;gap:3vw 4vh;align-items:start}
   .grid-2-6-6{display:grid;grid-template-columns:1fr 1fr;gap:3vw 4vh;align-items:start}
   .grid-2-8-4{display:grid;grid-template-columns:8fr 4fr;gap:3vw 4vh;align-items:start}
-  .grid-3-3{display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:minmax(0,1fr);gap:2.4vh 2vw;}
+  .grid-3-3{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    grid-auto-rows:minmax(0,1fr);
+    gap:2.4vh 2vw;
+  }
+  /* grid-6 已在旧样式里定义为 3x2，这里仅补 align */
+
+  /* ---------- 图片 frame-img（layouts.md 主命名） ---------- */
+  /* 在旧样式里已定义，这里补 img-cap 命名别名与增强 */
   figure.frame-img{margin:0;display:flex;flex-direction:column;min-width:0}
-  .img-cap{display:block;margin-top:.8vh;font-family:var(--mono);font-size:max(10px,.8vw);letter-spacing:.22em;text-transform:uppercase;opacity:.6;}
-  .callout-src{display:block;margin-top:1.6vh;font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;opacity:.6;}
+  .img-cap{
+    display:block;
+    margin-top:.8vh;
+    font-family:var(--mono);
+    font-size:max(10px,.8vw);
+    letter-spacing:.22em;
+    text-transform:uppercase;
+    opacity:.6;
+  }
+  /* callout src 命名别名 */
+  .callout-src{
+    display:block;
+    margin-top:1.6vh;
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:.2em;
+    text-transform:uppercase;
+    opacity:.6;
+  }
+
+  /* ---------- chrome & foot 补位（layouts.md 简单写法） ---------- */
   .chrome{font-family:var(--mono);font-size:max(11px,.78vw);letter-spacing:.2em;text-transform:uppercase;opacity:.62}
   .foot{font-family:var(--mono);font-size:max(11px,.78vw);letter-spacing:.18em;text-transform:uppercase;opacity:.5}
 
+  /* ============ 动效系统(Motion One 驱动) ============
+     所有 [data-anim] 元素默认隐藏,进入页面时由 JS 逐个揭示。
+     - cascade(默认):按 DOM 顺序 stagger 120ms 淡入 + y:16→0
+     - hero(hero 页自动):慢一点的 stagger 180ms
+     - quote(含 [data-anim="line"]):逐行 600ms 淡入
+     - directional(含 [data-anim="left|right"]):左→分隔线→右
+     - pipeline(data-animate="pipeline"):Space/→ 手动推进
+     Motion One 没加载成功时(CDN 断 + 本地丢),所有 [data-anim] 会兜底显示。
+  */
   [data-anim]{opacity:1}
   body.motion-ready [data-anim]{opacity:0}
   body.motion-ready [data-anim="left"]{transform:translateX(-24px)}
@@ -205,6 +424,7 @@
   body.motion-ready [data-anim="line"]{opacity:0;transform:translateY(10px)}
   body.motion-ready [data-animate="pipeline"] [data-anim]{opacity:.15}
 
+  /* ---------- 响应式降级 ---------- */
   @media (max-width:900px){
     .display{font-size:16vw}
     .display-zh{font-size:12vw}
@@ -224,599 +444,24 @@
 
 <div id="deck">
 
-<!-- =============================================================
-     SLIDE 1 · HERO COVER
-     ============================================================= -->
-<section class="slide hero dark">
-  <div class="chrome">
-    <div>TI MSPM0G3507 · Smart Car</div>
-    <div>Vol.01</div>
-  </div>
-  <div class="frame" style="display:grid; gap:4vh; align-content:center; min-height:80vh">
-    <div class="kicker" data-anim>项目报告 · Project Report</div>
-    <h1 class="h-hero" style="font-size:8.5vw" data-anim>Car.102</h1>
-    <h2 class="h-sub" data-anim>基于 MSPM0G3507 的两轮差速循迹小车</h2>
-    <p class="lead" style="max-width:58vw" data-anim>
-      8 路灰度传感器 · 双环 PID 闭环控制 · 编码器速度反馈 · OLED 实时显示
-    </p>
-    <div class="meta-row" data-anim>
-      <span>ARM Cortex-M0+</span><span>·</span><span>80 MHz</span><span>·</span><span>Code Composer Studio</span>
-    </div>
-  </div>
-  <div class="foot">
-    <div>嵌入式 · 智能小车 · 循迹算法</div>
-    <div>— 2026.05 —</div>
-  </div>
-</section>
+<!-- ============================================================
+     SLIDES 插入区 · 在此处填充所有 <section class="slide ..."> 页面
+     每页模板参考 references/page-patterns.md
+     页面组件参考 references/components.md
+     ============================================================ -->
 
-<!-- =============================================================
-     SLIDE 2 · PROJECT OVERVIEW (STATS)
-     ============================================================= -->
-<section class="slide light">
-  <div class="chrome">
-    <div>Overview · 项目概览</div>
-    <div>02 / 08</div>
-  </div>
-  <div class="frame" style="padding-top:5vh">
-    <div class="kicker" data-anim>Project · Car.102</div>
-    <h2 class="h-xl" data-anim>智能循迹小车</h2>
-    <p class="lead" style="margin-bottom:4vh; max-width:65vw" data-anim>
-      基于 TI MSPM0G3507 (ARM Cortex-M0+) 微控制器，通过 8 路灰度传感器检测赛道黑线，结合双环 PID 算法实现精确循迹。
-    </p>
-
-    <div class="grid-6" style="margin-top:2vh">
-      <div class="stat-card" data-anim>
-        <div class="stat-label">Driver Modules</div>
-        <div class="stat-nb">18</div>
-        <div class="stat-note">驱动模块</div>
-      </div>
-      <div class="stat-card" data-anim>
-        <div class="stat-label">Main Code</div>
-        <div class="stat-nb">210</div>
-        <div class="stat-note">main.c 行数</div>
-      </div>
-      <div class="stat-card" data-anim>
-        <div class="stat-label">Control Freq</div>
-        <div class="stat-nb">~33</div>
-        <div class="stat-note">控制频率 · Hz</div>
-      </div>
-      <div class="stat-card" data-anim>
-        <div class="stat-label">PID Loops</div>
-        <div class="stat-nb">3</div>
-        <div class="stat-note">PID 控制器</div>
-      </div>
-      <div class="stat-card" data-anim>
-        <div class="stat-label">Sensors</div>
-        <div class="stat-nb">8</div>
-        <div class="stat-note">灰度传感器 · 路</div>
-      </div>
-      <div class="stat-card" data-anim>
-        <div class="stat-label">Baud Rate</div>
-        <div class="stat-nb">115200</div>
-        <div class="stat-note">蓝牙调试 · bps</div>
-      </div>
-    </div>
-  </div>
-  <div class="foot">
-    <div>Car.102 · 项目规模概览</div>
-    <div>Stats Overview</div>
-  </div>
-</section>
-
-<!-- =============================================================
-     SLIDE 3 · HARDWARE ARCHITECTURE
-     ============================================================= -->
-<section class="slide dark">
-  <div class="chrome">
-    <div>Hardware · 硬件架构</div>
-    <div>03 / 08</div>
-  </div>
-  <div class="frame" style="padding-top:5vh">
-    <div class="kicker" data-anim>Architecture · 硬件层</div>
-    <h2 class="h-xl" data-anim>硬件系统</h2>
-    <p class="lead" style="max-width:50vw; margin-bottom:2vh" data-anim>MSPM0G3507 集成了丰富的外设接口。</p>
-
-    <div class="grid-2-6-6" style="margin-top:2vh; gap:3vw">
-      <div>
-        <div class="rowline" data-anim>
-          <div class="k">主控芯片</div>
-          <div class="v">MSPM0G3507 (ARM Cortex-M0+)</div>
-          <div class="m">80 MHz</div>
-        </div>
-        <div class="rowline" data-anim>
-          <div class="k">电机驱动</div>
-          <div class="v">H 桥 · 双路 PWM (0~100)</div>
-          <div class="m">PB8 / PA14</div>
-        </div>
-        <div class="rowline" data-anim>
-          <div class="k">编码器</div>
-          <div class="v">GPIO 中断 · 4 相解码 (正反转)</div>
-          <div class="m">50 ms 采样</div>
-        </div>
-        <div class="rowline" data-anim>
-          <div class="k">灰度传感器</div>
-          <div class="v">8 路 · 模拟多路复用器</div>
-          <div class="m">GPIO 读取</div>
-        </div>
-        <div class="rowline" data-anim>
-          <div class="k">OLED 显示</div>
-          <div class="v">SSD1306 · 128×64</div>
-          <div class="m">I2C (SW)</div>
-        </div>
-        <div class="rowline" data-anim>
-          <div class="k">蓝牙调试</div>
-          <div class="v">UART · 115200 bps</div>
-          <div class="m">PA10 TX</div>
-        </div>
-        <div class="rowline" data-anim>
-          <div class="k">IMU 模组</div>
-          <div class="v">WIT 传感器 (预留)</div>
-          <div class="m">UART</div>
-        </div>
-      </div>
-      <div>
-        <div data-anim style="background:rgba(255,255,255,.04); border-radius:12px; padding:2.4vh 2vw; border:1px solid rgba(255,255,255,.1)">
-          <div style="font-family:var(--mono); font-size:11px; letter-spacing:.22em; text-transform:uppercase; opacity:.5; margin-bottom:1.8vh">系统框图</div>
-          <svg viewBox="0 0 380 280" width="100%" style="max-height:44vh" xmlns="http://www.w3.org/2000/svg">
-            <!-- MCU -->
-            <rect x="140" y="100" width="100" height="60" rx="6" fill="rgba(59,130,246,.15)" stroke="#3b82f6" stroke-width="1.5"/>
-            <text x="170" y="126" fill="#60a5fa" font-size="11" font-weight="600" font-family="sans-serif">MSPM0</text>
-            <text x="160" y="143" fill="#60a5fa" font-size="9" font-family="monospace">G3507</text>
-
-            <!-- Motor -->
-            <rect x="20" y="40" width="80" height="36" rx="4" fill="rgba(34,197,94,.1)" stroke="#22c55e" stroke-width="1"/>
-            <text x="36" y="63" fill="#4ade80" font-size="9" font-family="sans-serif">左电机 PWM</text>
-
-            <rect x="20" y="200" width="80" height="36" rx="4" fill="rgba(34,197,94,.1)" stroke="#22c55e" stroke-width="1"/>
-            <text x="36" y="223" fill="#4ade80" font-size="9" font-family="sans-serif">右电机 PWM</text>
-
-            <!-- Encoder -->
-            <rect x="20" y="95" width="80" height="36" rx="4" fill="rgba(245,158,11,.1)" stroke="#f59e0b" stroke-width="1"/>
-            <text x="36" y="118" fill="#fbbf24" font-size="9" font-family="sans-serif">编码器A(左)</text>
-            <rect x="20" y="145" width="80" height="36" rx="4" fill="rgba(245,158,11,.1)" stroke="#f59e0b" stroke-width="1"/>
-            <text x="36" y="168" fill="#fbbf24" font-size="9" font-family="sans-serif">编码器B(右)</text>
-
-            <!-- Sensor -->
-            <rect x="280" y="40" width="80" height="36" rx="4" fill="rgba(139,92,246,.1)" stroke="#8b5cf6" stroke-width="1"/>
-            <text x="296" y="63" fill="#a78bfa" font-size="9" font-family="sans-serif">灰度 8路</text>
-
-            <rect x="280" y="95" width="80" height="36" rx="4" fill="rgba(139,92,246,.1)" stroke="#8b5cf6" stroke-width="1"/>
-            <text x="296" y="118" fill="#a78bfa" font-size="9" font-family="sans-serif">WIT IMU</text>
-
-            <rect x="280" y="150" width="80" height="36" rx="4" fill="rgba(139,92,246,.1)" stroke="#8b5cf6" stroke-width="1"/>
-            <text x="296" y="173" fill="#a78bfa" font-size="9" font-family="sans-serif">OLED 显示</text>
-
-            <rect x="280" y="205" width="80" height="36" rx="4" fill="rgba(139,92,246,.1)" stroke="#8b5cf6" stroke-width="1"/>
-            <text x="286" y="228" fill="#a78bfa" font-size="9" font-family="sans-serif">蓝牙 UART</text>
-
-            <!-- Arrows -->
-            <line x1="100" y1="58" x2="138" y2="115" stroke="rgba(255,255,255,.2)" stroke-width="1.5" marker-end="url(#a-w)"/>
-            <line x1="100" y1="218" x2="138" y2="160" stroke="rgba(255,255,255,.2)" stroke-width="1.5" marker-end="url(#a-w)"/>
-            <line x1="100" y1="113" x2="138" y2="113" stroke="rgba(255,255,255,.2)" stroke-width="1.5" marker-end="url(#a-w)"/>
-            <line x1="100" y1="163" x2="138" y2="150" stroke="rgba(255,255,255,.2)" stroke-width="1.5" marker-end="url(#a-w)"/>
-            <line x1="240" y1="115" x2="278" y2="58" stroke="rgba(255,255,255,.2)" stroke-width="1.5" marker-end="url(#a-w)"/>
-            <line x1="240" y1="115" x2="278" y2="113" stroke="rgba(255,255,255,.2)" stroke-width="1.5" marker-end="url(#a-w)"/>
-            <line x1="240" y1="130" x2="278" y2="168" stroke="rgba(255,255,255,.2)" stroke-width="1.5" marker-end="url(#a-w)"/>
-            <line x1="240" y1="140" x2="278" y2="223" stroke="rgba(255,255,255,.2)" stroke-width="1.5" marker-end="url(#a-w)"/>
-            <defs>
-              <marker id="a-w" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto">
-                <path d="M0,0 L10,5 L0,10 Z" fill="rgba(255,255,255,.35)"/>
-              </marker>
-            </defs>
-
-            <text x="115" y="82" fill="rgba(255,255,255,.25)" font-size="8" font-family="monospace">PWM</text>
-            <text x="115" y="198" fill="rgba(255,255,255,.25)" font-size="8" font-family="monospace">PWM</text>
-            <text x="260" y="82" fill="rgba(255,255,255,.25)" font-size="8" font-family="monospace">GPIO</text>
-          </svg>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="foot">
-    <div>硬件 · MSPM0G3507 外设分配</div>
-    <div>Hardware · 03/08</div>
-  </div>
-</section>
-
-<!-- =============================================================
-     SLIDE 4 · SOFTWARE ARCHITECTURE
-     ============================================================= -->
-<section class="slide light">
-  <div class="chrome">
-    <div>Software · 软件架构</div>
-    <div>04 / 08</div>
-  </div>
-  <div class="frame" style="padding-top:5vh">
-    <div class="kicker" data-anim>Architecture · 软件层</div>
-    <h2 class="h-xl" data-anim>软件架构</h2>
-
-    <div class="grid-2-6-6" style="margin-top:3vh">
-      <div>
-        <p class="lead" style="font-size:1.4vw; margin-bottom:2vh" data-anim>模块化驱动层 + 控制层</p>
-        <div class="callout" data-anim>
-          应用的驱动程序被组织在 <span style="font-family:var(--mono); opacity:.8">Drivers/</span> 目录下，每个模块独立管理。
-          <div class="callout-src">模块化 · 可复用</div>
-        </div>
-        <div style="margin-top:2vh" data-anim>
-          <div class="meta-row">
-            <span>主控文件</span><span>·</span><span>main.c + main.h</span>
-          </div>
-          <div class="rowline">
-            <div class="k">Control</div>
-            <div class="v">灰度偏差计算 · UART 输出</div>
-            <div class="m">PID 实例</div>
-          </div>
-          <div class="rowline">
-            <div class="k">PID</div>
-            <div class="v">位置式 PID · 积分限幅</div>
-            <div class="m">3 个实例</div>
-          </div>
-          <div class="rowline">
-            <div class="k">Motor</div>
-            <div class="v">H 桥方向 · PWM 占空比</div>
-            <div class="m">±100</div>
-          </div>
-          <div class="rowline">
-            <div class="k">Encoder</div>
-            <div class="v">四倍频解码 · 50ms 测速</div>
-            <div class="m">GPIO 中断</div>
-          </div>
-          <div class="rowline">
-            <div class="k">Grayscale</div>
-            <div class="v">8 路 MUX 选择 · 阈值判断</div>
-            <div class="m">GPIO</div>
-          </div>
-          <div class="rowline">
-            <div class="k">OLED</div>
-            <div class="v">软件 I2C · SSD1306</div>
-            <div class="m">128×64</div>
-          </div>
-          <div class="rowline">
-            <div class="k">MSPM0</div>
-            <div class="v">时钟 SysTick · 中断组管理</div>
-            <div class="m">基础层</div>
-          </div>
-        </div>
-      </div>
-      <div>
-        <div data-anim style="background:rgba(10,31,61,.04); border-radius:12px; padding:2.4vh 2vw; border:1px solid rgba(10,31,61,.1)">
-          <div style="font-family:var(--mono); font-size:11px; letter-spacing:.22em; text-transform:uppercase; opacity:.5; margin-bottom:1.8vh">目录结构</div>
-          <div style="font-family:var(--mono); font-size:max(11px,.78vw); line-height:2">
-            <div style="color:#1e40af; font-weight:600">Car.102/</div>
-            <div style="padding-left:1.2em">
-              <div style="color:var(--ink)">main.c</div>
-              <div style="color:var(--ink)">main.h</div>
-              <div style="color:#2563eb">Drivers/</div>
-              <div style="padding-left:1.2em; color:rgba(10,31,61,.6)">
-                <div style="color:#0891b2">Control/</div>
-                <div style="color:#0891b2">PID/</div>
-                <div style="color:#0891b2">Motor/</div>
-                <div style="color:#0891b2">Encoder/</div>
-                <div style="color:#0891b2">Grayscale/</div>
-                <div style="color:#64748b">OLED_Software_I2C/</div>
-                <div style="color:#64748b">WIT/</div>
-                <div style="color:#64748b">MSPM0/</div>
-              </div>
-              <div style="color:rgba(10,31,61,.35); margin-top:1vh">+ BNO08X / MPU6050 / IMU660RB / LSM6DSV16X / VL53L0X / Ultrasonic_*</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="foot">
-    <div>软件 · 驱动 + 控制架构</div>
-    <div>Software · 04/08</div>
-  </div>
-</section>
-
-<!-- =============================================================
-     SLIDE 5 · MAIN CONTROL PIPELINE
-     ============================================================= -->
-<section class="slide dark" data-animate="pipeline">
-  <div class="chrome">
-    <div>Algorithm · 控制流程</div>
-    <div>05 / 08</div>
-  </div>
-  <div class="frame">
-    <div class="kicker" data-anim>Pipeline · 主循环</div>
-    <h2 class="h-xl" data-anim style="margin-bottom:1vh">控制流程 · ~30ms 周期</h2>
-
-    <div class="pipeline-section">
-      <div class="pipeline-label">传感器采集 → PID 运算 → 执行输出</div>
-      <div class="pipeline" data-cols="4">
-        <div class="step" data-anim="step">
-          <div class="step-nb">01</div>
-          <div class="step-title">读取灰度</div>
-          <div class="step-desc">8 路 MUX 扫描 · ~8ms</div>
-        </div>
-        <div class="step" data-anim="step">
-          <div class="step-nb">02</div>
-          <div class="step-title">计算偏差</div>
-          <div class="step-desc">加权平均 · 场景分类</div>
-        </div>
-        <div class="step" data-anim="step">
-          <div class="step-nb">03</div>
-          <div class="step-title">场景判定</div>
-          <div class="step-desc">丢线保持 / 终点停车</div>
-        </div>
-        <div class="step" data-anim="step">
-          <div class="step-nb">04</div>
-          <div class="step-title">转向 PID</div>
-          <div class="step-desc">偏差 → 差速量</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="pipeline-section">
-      <div class="pipeline-label">最终输出</div>
-      <div class="pipeline" data-cols="4">
-        <div class="step" data-anim="step">
-          <div class="step-nb">05</div>
-          <div class="step-title">差速分配</div>
-          <div class="step-desc">base_speed ± turn</div>
-        </div>
-        <div class="step" data-anim="step">
-          <div class="step-nb">06</div>
-          <div class="step-title">速度 PID</div>
-          <div class="step-desc">编码器反馈 · 左右独立</div>
-        </div>
-        <div class="step" data-anim="step">
-          <div class="step-nb">07</div>
-          <div class="step-title">PWM 输出</div>
-          <div class="step-desc">限幅 [0,100] · H 桥</div>
-        </div>
-        <div class="step" data-anim="step">
-          <div class="step-nb">08</div>
-          <div class="step-title">显示 + 调试</div>
-          <div class="step-desc">OLED · 蓝牙 UART</div>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="foot">
-    <div>按 → 键逐步查看流程</div>
-    <div>Pipeline · 05/08</div>
-  </div>
-</section>
-
-<!-- =============================================================
-     SLIDE 6 · CONTROL BLOCK DIAGRAM (SVG)
-     ============================================================= -->
-<section class="slide light">
-  <div class="chrome">
-    <div>Control Theory · 控制理论</div>
-    <div>06 / 08</div>
-  </div>
-  <div class="frame" style="padding-top:4vh">
-    <div class="kicker" data-anim>Feedback Control · 闭环控制</div>
-    <h2 class="h-xl" data-anim style="margin-bottom:1vh">双环 PID 控制系统</h2>
-
-    <div style="flex:1; display:flex; align-items:center; justify-content:center; padding:1vh 0">
-      <svg viewBox="0 0 820 240" width="820" height="240" style="max-width:100%; height:auto" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <marker id="a-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-            <path d="M0,0 L10,5 L0,10 Z" fill="#3b82f6"/>
-          </marker>
-          <marker id="a-amber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-            <path d="M0,0 L10,5 L0,10 Z" fill="#f59e0b"/>
-          </marker>
-          <marker id="a-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-            <path d="M0,0 L10,5 L0,10 Z" fill="#22c55e"/>
-          </marker>
-          <marker id="a-muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-            <path d="M0,0 L10,5 L0,10 Z" fill="#5a6480"/>
-          </marker>
-        </defs>
-
-        <!-- Title -->
-        <text x="280" y="28" fill="#5a6480" font-size="11" font-weight="600" font-family="monospace" letter-spacing=".18em">双环 PID 控制系统 · Block Diagram</text>
-
-        <!-- Summing junction -->
-        <circle cx="70" cy="120" r="22" fill="none" stroke="#3b82f6" stroke-width="2" opacity=".8"/>
-        <text x="60" y="118" fill="#3b82f6" font-size="16" font-weight="bold">+</text>
-        <text x="68" y="132" fill="#ef4444" font-size="16" font-weight="bold">−</text>
-
-        <!-- PID box -->
-        <rect x="130" y="85" width="110" height="70" rx="8" fill="rgba(245,158,11,.06)" stroke="#f59e0b" stroke-width="1.5"/>
-        <text x="148" y="108" fill="#d97706" font-size="12" font-weight="bold">PID</text>
-        <text x="145" y="124" fill="#f59e0b" font-size="9" font-family="monospace">转向环</text>
-        <text x="140" y="139" fill="#f59e0b" font-size="9" font-family="monospace">Kp=0.8 Ki=0.005 Kd=0.3</text>
-
-        <!-- Plant -->
-        <rect x="380" y="85" width="130" height="70" rx="8" fill="rgba(34,197,94,.06)" stroke="#22c55e" stroke-width="1.5"/>
-        <text x="420" y="108" fill="#16a34a" font-size="12" font-weight="bold">被控对象</text>
-        <text x="400" y="126" fill="#22c55e" font-size="9" font-family="monospace">电机 + 车轮 + 车体</text>
-        <text x="405" y="142" fill="#22c55e" font-size="9" font-family="monospace">PWM → 转速 → 位移</text>
-
-        <!-- Second PID (speed loop) -->
-        <rect x="260" y="85" width="90" height="70" rx="8" fill="rgba(139,92,246,.06)" stroke="#8b5cf6" stroke-width="1.5"/>
-        <text x="276" y="108" fill="#7c3aed" font-size="11" font-weight="bold">PID</text>
-        <text x="275" y="124" fill="#8b5cf6" font-size="9" font-family="monospace">速度环</text>
-        <text x="272" y="139" fill="#8b5cf6" font-size="9" font-family="monospace">Kp=0.5 Ki=0.01 Kd=0.1</text>
-
-        <!-- Arrows between blocks -->
-        <line x1="92" y1="120" x2="126" y2="120" stroke="#f59e0b" stroke-width="2" marker-end="url(#a-amber)"/>
-        <line x1="240" y1="120" x2="256" y2="120" stroke="#8b5cf6" stroke-width="2" marker-end="url(#a-amber)"/>
-        <line x1="350" y1="120" x2="376" y2="120" stroke="#22c55e" stroke-width="2" marker-end="url(#a-green)"/>
-        <line x1="510" y1="120" x2="555" y2="120" stroke="#22c55e" stroke-width="2" marker-end="url(#a-green)"/>
-
-        <!-- Reference input -->
-        <line x1="10" y1="120" x2="44" y2="120" stroke="#3b82f6" stroke-width="2" marker-end="url(#a-blue)"/>
-        <text x="14" y="108" fill="#3b82f6" font-size="9" font-family="monospace">设定</text>
-        <text x="10" y="148" fill="#5a6480" font-size="9" font-family="monospace">r(t)</text>
-
-        <!-- Output -->
-        <circle cx="575" cy="120" r="18" fill="none" stroke="#22c55e" stroke-width="2" opacity=".8"/>
-        <text x="590" y="108" fill="#22c55e" font-size="9" font-family="monospace">y(t)</text>
-        <text x="590" y="124" fill="#5a6480" font-size="9" font-family="monospace">实际</text>
-
-        <!-- Sensor feedback -->
-        <rect x="130" y="190" width="110" height="32" rx="6" fill="rgba(59,130,246,.06)" stroke="#3b82f6" stroke-width="1" stroke-dasharray="4,3"/>
-        <text x="148" y="211" fill="#60a5fa" font-size="10" font-weight="500">灰度编码器</text>
-
-        <!-- Feedback arrows -->
-        <line x1="185" y1="190" x2="185" y2="158" stroke="#3b82f6" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#a-blue)"/>
-        <line x1="575" y1="138" x2="575" y2="206" stroke="#3b82f6" stroke-width="1.5" stroke-dasharray="4,3"/>
-        <line x1="575" y1="206" x2="240" y2="206" stroke="#3b82f6" stroke-width="1.5" stroke-dasharray="4,3"/>
-        <line x1="240" y1="206" x2="240" y2="190" stroke="#3b82f6" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#a-blue)"/>
-
-        <text x="380" y="202" fill="#3b82f6" font-size="9" font-family="monospace">反馈 (编码器速度 + 灰度偏差)</text>
-
-        <!-- Disturbance -->
-        <line x1="350" y1="50" x2="350" y2="83" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#a-muted)"/>
-        <text x="310" y="46" fill="#ef4444" font-size="8" font-family="monospace">扰动 (摩擦/坡度)</text>
-
-        <!-- Signal labels -->
-        <text x="100" y="108" fill="#5a6480" font-size="9" font-family="monospace">e(t)</text>
-        <text x="205" y="108" fill="#5a6480" font-size="9" font-family="monospace">u₁(t)</text>
-        <text x="295" y="108" fill="#5a6480" font-size="9" font-family="monospace">u₂(t)</text>
-      </svg>
-    </div>
-  </div>
-  <div class="foot">
-    <div>转向环 (外环) + 速度环 (内环) 串联</div>
-    <div>Control · 06/08</div>
-  </div>
-</section>
-
-<!-- =============================================================
-     SLIDE 7 · ISSUES & IMPROVEMENTS
-     ============================================================= -->
-<section class="slide hero dark">
-  <div class="chrome">
-    <div>Code Review · 代码审查</div>
-    <div>07 / 08</div>
-  </div>
-  <div class="frame" style="padding-top:5vh">
-    <div class="kicker" data-anim>Improvements · 改进建议</div>
-    <h2 class="h-xl" style="font-size:5vw; margin-bottom:2vh" data-anim>发现的问题与改进方向</h2>
-
-    <div class="grid-2-6-6" style="gap:2.4vw; margin-top:1vh">
-      <div>
-        <div class="stat-card" data-anim>
-          <div class="stat-label" style="color:#f87171">CRITICAL · 严重</div>
-          <div class="stat-note" style="font-size:max(13px,1vw); line-height:1.6">
-            <strong style="color:#fbbf24">uart0_send_string 空指针检查错误</strong><br>
-            <span style="font-family:var(--mono); font-size:max(11px,.8vw); opacity:.7">str!=0 && str!=0</span> 重复检查 str 本身，应改为 <span style="font-family:var(--mono); font-size:max(11px,.8vw)">*str!='\0' && str!=NULL</span>。
-            当前代码偶然工作只因 str 递增后触 NULL 退出循环。
-          </div>
-        </div>
-        <div class="stat-card" data-anim>
-          <div class="stat-label" style="color:#fb923c">WARNING · 警告</div>
-          <div class="stat-note" style="font-size:max(13px,1vw); line-height:1.6">
-            <strong style="color:#fbbf24">控制频率未达预期</strong><br>
-            注释声称 ~50Hz，但灰度扫描阻塞 ~8ms + 20ms delay = 实际 ~33Hz。<br>
-            <strong style="color:#fbbf24">灰度扫描阻塞过长</strong><br>
-            <span style="font-family:var(--mono)">delay_cycles(320000)</span> × 8 = ~8ms 纯阻塞等待。
-          </div>
-        </div>
-      </div>
-      <div>
-        <div class="stat-card" data-anim>
-          <div class="stat-label" style="color:#60a5fa">ADVICE · 建议</div>
-          <div class="stat-note" style="font-size:max(13px,1vw); line-height:1.6">
-            • <strong>死代码清理</strong> — Grayscale.c 尾部残留大段注释旧代码<br>
-            • <strong>OLED 位置魔数</strong> — <span style="font-family:var(--mono)">5*6, 7*6</span> 硬编码，改字体需全表重算<br>
-            • <strong>缓冲区复用</strong> — <span style="font-family:var(--mono)">oled_buffer[64]</span> 同时用于 OLED 和 UART，脆皮设计<br>
-            • <strong>未生效的驱动程序</strong> — MPU6050, IMU660RB, LSM6DSV16X 编译但不使用，空耗空间<br>
-            • <strong>缺少 .gitignore</strong> — Debug 产物、clangd 缓存被纳入版本管理<br>
-            • <strong>无看门狗</strong> — MCU 死机无自动恢复机制
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="foot">
-    <div>基于代码静态分析 · 2026.05</div>
-    <div>Review · 07/08</div>
-  </div>
-</section>
-
-<!-- =============================================================
-     SLIDE 8 · HOW TO RUN
-     ============================================================= -->
-<section class="slide light">
-  <div class="chrome">
-    <div>Quick Start · 快速开始</div>
-    <div>08 / 08</div>
-  </div>
-  <div class="frame" style="padding-top:5vh">
-    <div class="kicker" data-anim>Deploy · 部署指南</div>
-    <h2 class="h-xl" data-anim>如何构建 & 运行</h2>
-
-    <div class="grid-2-6-6" style="margin-top:3vh; gap:3vw">
-      <div style="display:flex; flex-direction:column; gap:2.6vh">
-        <div class="step" data-anim>
-          <div class="step-nb" style="font-size:1.6vw">01</div>
-          <div class="step-title" style="font-size:1.6vw">安装 Code Composer Studio</div>
-          <div class="step-desc" style="font-size:max(12px,1vw)">
-            TI CCS v12+，通过 Resource Explorer 安装 <strong>MSPM0 SDK 2.10.00.04</strong>
-          </div>
-        </div>
-        <div class="step" data-anim>
-          <div class="step-nb" style="font-size:1.6vw">02</div>
-          <div class="step-title" style="font-size:1.6vw">导入项目</div>
-          <div class="step-desc" style="font-size:max(12px,1vw)">
-            <span style="font-family:var(--mono); background:rgba(10,31,61,.06); padding:2px 8px; border-radius:4px">Project → Import CCS Projects → Browse</span>
-            选择 <span style="font-family:var(--mono)">car.102</span> 目录 → Finish
-          </div>
-        </div>
-        <div class="step" data-anim>
-          <div class="step-nb" style="font-size:1.6vw">03</div>
-          <div class="step-title" style="font-size:1.6vw">连接调试器 & 烧录</div>
-          <div class="step-desc" style="font-size:max(12px,1vw)">
-            J-Link 连接 SWCLK(PA20) / SWDIO(PA19) / GND / 3.3V<br>
-            构建 <span style="font-family:var(--mono); background:rgba(10,31,61,.06); padding:2px 8px; border-radius:4px">Ctrl+B</span> · 调试 <span style="font-family:var(--mono); background:rgba(10,31,61,.06); padding:2px 8px; border-radius:4px">F11</span>
-          </div>
-        </div>
-        <div class="step" data-anim>
-          <div class="step-nb" style="font-size:1.6vw">04</div>
-          <div class="step-title" style="font-size:1.6vw">调试：串口查看数据</div>
-          <div class="step-desc" style="font-size:max(12px,1vw)">
-            蓝牙模块接 PA10 (TX)，串口助手 115200 bps 查看：
-            <div style="font-family:var(--mono); font-size:max(11px,.78vw); background:rgba(10,31,61,.04); border-radius:6px; padding:8px 12px; margin-top:6px; opacity:.7">
-              dev:+123 L: 45 R: 35 cnt:2 SL: 40 SR: 38
-            </div>
-          </div>
-        </div>
-      </div>
-      <div>
-        <div class="callout" style="margin-bottom:2vh" data-anim>
-          接线提醒
-          <div class="callout-src">Checklist</div>
-        </div>
-        <div class="stat-card" data-anim>
-          <div class="stat-note" style="font-size:max(12px,.88vw); line-height:1.7">
-            ✅ 左电机: PA17/PA18 + PWM PB8<br>
-            ✅ 右电机: PB9/PA15 + PWM PA14<br>
-            ✅ 编码器 A: PA22/PA21<br>
-            ✅ 编码器 B: PA24/PA23<br>
-            ✅ 灰度: 8路 IO + AD0~AD2 MUX<br>
-            ✅ OLED: SCL PA12 / SDA PA13<br>
-            ✅ 蓝牙: TX→PA10<br>
-            ✅ 蜂鸣器: PA27<br>
-            ✅ J-Link: SWCLK/SWDIO/GND
-          </div>
-        </div>
-        <div class="callout" data-anim style="margin-top:2vh; border-left-color:#22c55e">
-          上电后蜂鸣器响一声、OLED 显示 "Car.101 PID" 即代表系统正常启动。
-          <div class="callout-src">正常状态指示</div>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="foot">
-    <div>Car.102 · 快速部署指南</div>
-    <div>End · 08/08</div>
-  </div>
-</section>
+<!-- SLIDES_HERE -->
 
 </div>
 
 <div id="nav"></div>
 
 <script>
+/* =============== WebGL 双背景 ===============
+   深色页：Holographic Dispersion（全息色散 · 钛金暗流）—— 彩虹微扰、鼠标径向涟漪
+   浅色页：Spiral Vortex（旋转涡流 · 银色珍珠）—— domain-warp 流动、无中心
+   修改风格请参考 references/webgl-backgrounds.md
+*/
 const VS = `attribute vec2 position;void main(){gl_Position=vec4(position,0.0,1.0);}`;
 
 const FS_DARK = `precision highp float;
@@ -834,17 +479,17 @@ void main(){
     p.y+=0.1/i*cos(i*2.0*p.x+u_time*0.3)-0.05;
   }
   float r=length(p);float ang=atan(p.y,p.x);
-  vec3 a=vec3(0.08,0.10,0.18);
-  vec3 b=vec3(0.03,0.06,0.12);
-  vec3 c=vec3(0.9,0.9,1.0);
-  vec3 d=vec3(0.15,0.25,0.45);
+  vec3 a=vec3(0.12,0.12,0.13);
+  vec3 b=vec3(0.03,0.04,0.05);
+  vec3 c=vec3(1.0,1.0,1.0);
+  vec3 d=vec3(0.1,0.2,0.4);
   vec3 col=palette(r*1.5+p0.x*0.5+u_time*0.1,a,b,c,d);
   float disp=sin(r*25.0-u_time*1.5+ang*2.0)*0.5+0.5;
   col+=vec3(disp*0.015,disp*0.01,disp*0.02);
   float hi=pow(sin(p.x*4.0+p.y*3.0+u_time)*0.5+0.5,8.0);
   col+=hi*0.08;
-  vec3 base=vec3(0.04,0.06,0.10);
-  col=mix(base,col,0.82);
+  vec3 base=vec3(0.05,0.05,0.06);
+  col=mix(base,col,0.85);
   gl_FragColor=vec4(col,1.0);
 }`;
 
@@ -874,12 +519,12 @@ void main(){
   vec2 r=vec2(fbm(p*2.0+q*1.3+vec2(1.7,9.2)+u_time*0.05),
               fbm(p*2.0+q*1.3+vec2(8.3,2.8)+u_time*0.04));
   float f=fbm(p*2.2+r*1.5);
-  vec3 silverDark=vec3(0.88,0.90,0.92);
-  vec3 paper=vec3(0.945,0.947,0.955);
+  vec3 silverDark=vec3(0.86,0.85,0.84);
+  vec3 paper=vec3(0.955,0.945,0.925);
   vec3 col=mix(silverDark,paper,f);
   float ph=r.x*2.2+u_time*0.35;
-  col+=vec3(0.55,0.62,0.92)*sin(ph)*0.055;
-  col+=vec3(0.45,0.62,0.85)*sin(ph*0.8+2.0)*0.05;
+  col+=vec3(0.78,0.62,0.92)*sin(ph)*0.055;
+  col+=vec3(0.55,0.72,0.95)*sin(ph*0.8+2.0)*0.05;
   float hl=smoothstep(0.48,0.92,f);
   col+=hl*0.06;
   gl_FragColor=vec4(col,1.0);
@@ -928,11 +573,13 @@ const t0=Date.now();
   requestAnimationFrame(loop);
 })();
 
+// =============== 导航（翻页 / 圆点 / 键盘 / 滚轮 / 触屏） ===============
 const deck=document.getElementById('deck');
 const slides=deck.querySelectorAll('.slide');
 const nav=document.getElementById('nav');
 let idx=0,total=slides.length,lock=false;
 
+// 关键：矫正 deck 宽度为 total * 100vw，否则翻页会错位
 deck.style.width=(total*100)+'vw';
 
 slides.forEach((s,i)=>{
@@ -947,13 +594,16 @@ function go(n){
   idx=Math.max(0,Math.min(total-1,n));
   deck.style.transform=`translateX(${-idx*100}vw)`;
   nav.querySelectorAll('.dot').forEach((d,i)=>d.classList.toggle('active',i===idx));
+  /* 主题切换：优先读 data-theme，其次从 class（light/dark）推断 */
   const el=slides[idx];
   const th=el.dataset.theme || (el.classList.contains('light')?'light':(el.classList.contains('dark')?'dark':'dark'));
   document.body.classList.toggle('light-bg',th==='light');
+  /* 动效：翻页过渡中段触发当前页的入场动画（由 motion-boot 注册） */
   if(window.__playSlide) setTimeout(()=>window.__playSlide(idx), 450);
   lock=true;setTimeout(()=>lock=false,700);
 }
 
+/* =============== ESC 索引视图 =============== */
 let overviewOn=false;
 const ov=document.createElement('div');
 ov.id='overview';
@@ -1033,6 +683,12 @@ go(0);
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 <script>lucide.createIcons();</script>
 
+<!-- ============ Motion One 动效引擎（本地优先,CDN 兜底） ============
+     加载策略:先 ./assets/motion.min.js(本地,离线可用),失败 fallback 到 jsDelivr CDN
+     加载完成后挂 window.__playSlide / window.__pipeAdvance,
+     导航脚本会在翻页中段调用 __playSlide(idx),键盘/滚轮/触屏会在翻页前调用 __pipeAdvance()
+     双双失败时会兜底把所有 [data-anim] 设为可见,不让动效破坏阅读
+-->
 <script type="module">
 let motion;
 try {
@@ -1106,6 +762,7 @@ if(motion){
       return;
     }
 
+    // default: cascade
     animate(all, {opacity:[0,1], y:[16,0]}, {duration:.75, delay:stagger(.1, {start:.15}), easing:EASE});
   }
 
@@ -1126,6 +783,7 @@ if(motion){
   window.__playSlide = playSlide;
   window.__pipeAdvance = pipeAdvance;
 
+  // 首屏:go(0) 已跑过(同步),没来得及触发动效 → 这里补一下
   playSlide(0);
 }
 </script>

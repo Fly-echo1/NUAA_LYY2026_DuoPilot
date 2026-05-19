@@ -3,6 +3,8 @@
 #include "Control.h"
 #include "motor.h"
 #include "clock.h"
+#include <stdint.h>
+#include <stdbool.h>
 
 /* PID 控制器实例 */
 PID_t pid_turn;       // 转向环PID: 灰度偏差 → 差速
@@ -76,13 +78,16 @@ void uart0_send_char(char ch)
 /* 串口0发送字符串 */
 void uart0_send_string(char* str)
 {
-    //当前字符串地址不在结尾 并且 字符串首地址不为空
-    while(*str!=0&&str!=0)
+    while(str && *str)
     {
         //发送字符串首地址中的字符，并且在发送完成之后首地址自增
         uart0_send_char(*str++);
     }
 }
+
+/* Forward declarations */
+float PID_Calculate(PID_t *pid, float error);
+void PID_Init(PID_t *pid, float Kp, float Ki, float Kd, float integral_limit, float output_limit);
 
 /* ===== Follower State Machine ===== */
 FollowerState_t   g_follower_state = FOLLOWER_FOLLOWING;

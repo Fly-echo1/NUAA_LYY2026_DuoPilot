@@ -50,6 +50,7 @@
                                     <listOptionValue value="${PROJECT_ROOT}/Drivers/IMU660RB/Fusion"/>
                                     <listOptionValue value="${PROJECT_ROOT}/Drivers/IMU660RB"/>
                                     <listOptionValue value="${PROJECT_ROOT}/Drivers/LSM6DSV16X"/>
+                                    <listOptionValue value="${PROJECT_ROOT}/Drivers/Control"/>
                                     <listOptionValue value="${PROJECT_ROOT}/Drivers/Grayscale"/>
                                     <listOptionValue value="${PROJECT_ROOT}/Drivers/VL53L0X"/>
                                     <listOptionValue value="${PROJECT_ROOT}/Drivers/WIT"/>
